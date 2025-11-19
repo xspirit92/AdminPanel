@@ -1,0 +1,51 @@
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { ApiService } from './api.service';
+import { 
+  PurchaseDto, 
+  PagedListDto, 
+  CreateOrUpdatePurchaseCommand, 
+  Result
+} from '../models/purchase.models';
+
+export interface PurchaseFilter {
+  supplierId?: number;
+  facilityId?: number;
+  productId?: number;
+  purchaseStatus?: number;
+  startDate?: string;
+  endDate?: string;
+  pageNumber?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortDescending?: boolean;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class PurchaseService {
+  private endpoint = '/api/Purchase';
+
+  constructor(private apiService: ApiService) {}
+
+  getPurchases(filter: PurchaseFilter): Observable<Result<PagedListDto>> {
+    return this.apiService.get<Result<PagedListDto>>(this.endpoint, filter);
+  }
+
+  getPurchaseById(id: string): Observable<PurchaseDto> {
+    return this.apiService.get<PurchaseDto>(`${this.endpoint}/${id}`);
+  }
+
+  createPurchase(command: CreateOrUpdatePurchaseCommand): Observable<PurchaseDto> {
+    return this.apiService.post<PurchaseDto>(this.endpoint, command);
+  }
+
+  updatePurchase(command: CreateOrUpdatePurchaseCommand): Observable<PurchaseDto> {
+    return this.apiService.post<PurchaseDto>(this.endpoint, command);
+  }
+
+  deletePurchase(id: string): Observable<PurchaseDto> {
+    return this.apiService.delete<PurchaseDto>(`${this.endpoint}/${id}`);
+  }
+}
