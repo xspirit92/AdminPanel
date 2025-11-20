@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { SafeHtmlPipe } from '../../../pipe/safe-html.pipe';
 import { RouterModule } from '@angular/router';
 
@@ -21,6 +21,8 @@ export class AlertComponent {
   @Input() showLink: boolean = false;
   @Input() linkHref: string = '#';
   @Input() linkText: string = 'Learn more';
+  @Input() showCloseButton: boolean = false;
+  @Output() closed = new EventEmitter<void>();
 
   get variantClasses() {
     return {
@@ -113,5 +115,9 @@ export class AlertComponent {
       ),
     }
     return icons[this.variant];
+  }
+
+  close() {
+    this.closed.emit();
   }
 }

@@ -22,7 +22,7 @@ interface MultiOption {
     CommonModule,
     MultiSelectComponent,
     ComponentCardComponent,
-    SelectComponent,
+    // SelectComponent,
     LabelComponent,
   ],
   templateUrl: './select-inputs.component.html',

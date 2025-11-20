@@ -11,9 +11,9 @@ import { FormsModule } from '@angular/forms';
   selector: 'app-user-address-card',
   imports: [
     CommonModule,
-    InputFieldComponent,
+    // InputFieldComponent,
     ButtonComponent,
-    LabelComponent,
+    // LabelComponent,
     ModalComponent,
     FormsModule,
   ],

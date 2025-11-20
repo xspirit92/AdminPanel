@@ -10,7 +10,7 @@ import { ButtonComponent } from '../../ui/button/button.component';
   imports: [
     CommonModule,
     ModalComponent,
-    InputFieldComponent,
+    // InputFieldComponent,
     ButtonComponent,
   ],
   templateUrl: './user-meta-card.component.html',

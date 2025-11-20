@@ -12,7 +12,7 @@ import { ButtonComponent } from '../../ui/button/button.component';
     CommonModule,
     LabelComponent,
     InputFieldComponent,
-    SelectComponent,
+    // SelectComponent,
     TextAreaComponent,
     ButtonComponent
   ],

@@ -1,0 +1,49 @@
+<div #dropdownContainer class="relative">
+  @if (label) {
+  <app-label [for]="id">{{ label }}</app-label>
+  }
+  
+  <div class="relative">
+    <!-- Основное поле ввода -->
+    <div class="relative">
+      <input
+        #dateInput
+        [id]="id"
+        [placeholder]="placeholder"
+        readonly
+        (click)="toggleDropdown()"
+        class="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 cursor-pointer dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:focus:border-brand-800"
+        autocomplete="off"
+        data-input
+        />
+      
+      <!-- Иконка стрелки -->
+      <span class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
+        <svg class="transition-transform duration-200" [class.rotate-180]="showDropdown" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+    </div>
+
+    <!-- Dropdown с предустановленными периодами -->
+    @if (showDropdown) {
+    <div class="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+      <div class="p-2">
+        @for (preset of dateRangePresets; track preset.key) {
+        <button
+          type="button"
+          (click)="selectPreset(preset)"
+          class="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+          [class.bg-brand-50]="selectedPreset === preset.key"
+          [class.text-brand-700]="selectedPreset === preset.key"
+          [class.dark:bg-brand-500/20]="selectedPreset === preset.key"
+          [class.dark:text-brand-300]="selectedPreset === preset.key"
+        >
+          {{ preset.label }}
+        </button>
+        }
+      </div>
+    </div>
+    }
+  </div>
+</div>

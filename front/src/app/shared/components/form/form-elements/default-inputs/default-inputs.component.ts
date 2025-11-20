@@ -14,7 +14,7 @@ import { TimePickerComponent } from '../../time-picker/time-picker.component';
     ComponentCardComponent,
     LabelComponent,
     InputFieldComponent,
-    SelectComponent,
+    // SelectComponent,
     DatePickerComponent,
     TimePickerComponent,
   ],

@@ -10,9 +10,9 @@ import { ModalComponent } from '../../ui/modal/modal.component';
   selector: 'app-user-info-card',
   imports: [
     CommonModule,
-    InputFieldComponent,
+    // InputFieldComponent,
     ButtonComponent,
-    LabelComponent,
+    // LabelComponent,
     ModalComponent,
   ],
   templateUrl: './user-info-card.component.html',

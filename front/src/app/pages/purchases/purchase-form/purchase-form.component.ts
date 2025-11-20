@@ -1,59 +1,53 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { LabelComponent } from '../../../shared/components/form/label/label.component';
+import { InputFieldComponent } from '../../../shared/components/form/input/input-field.component';
+import { SelectComponent } from '../../../shared/components/form/select/select.component';
+import { ButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { CreateOrUpdatePurchaseCommand, FacilityDto, ProductDto, ProductTypeEnum, SupplierDto, UnitOfMeasureEnum } from '../../../core/models/purchase.models';
+import { CommonService } from '../../../core/services/common.service';
 import { PurchaseService } from '../../../core/services/purchase.service';
-import { CreateOrUpdatePurchaseCommand } from '../../../core/models/purchase.models';
+import { PageBreadcrumbComponent } from "../../../shared/components/common/page-breadcrumb/page-breadcrumb.component";
+import { NotificationService } from '../../../shared/services/notification.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-purchase-form',
-  standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
-  templateUrl: './purchase-form.component.html'
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    LabelComponent,
+    InputFieldComponent,
+    SelectComponent,
+    ButtonComponent,
+    PageBreadcrumbComponent
+],
+  templateUrl: './purchase-form.component.html',
+  styles: ``
 })
 export class PurchaseFormComponent implements OnInit {
   purchaseForm: FormGroup;
-  isEditMode = false;
-  purchaseId: string | null = null;
-  loading = false;
-  submitted = false;
 
-  // Временные данные для демонстрации (замените на реальные сервисы)
-  suppliers = [
-    { id: 1, name: 'Поставщик 1' },
-    { id: 2, name: 'Поставщик 2' },
-    { id: 3, name: 'Поставщик 3' }
-  ];
+  suppliers: SupplierDto[] = [];
+  facilities: FacilityDto[] = [];
+  products: ProductDto[] = [];
 
-  facilities = [
-    { id: 1, name: 'Производство Москва' },
-    { id: 2, name: 'Производство СПб' },
-    { id: 3, name: 'Производство Казань' }
-  ];
-
-  products = [
-    { id: 1, name: 'Дубовая доска' },
-    { id: 2, name: 'Сосновая доска' },
-    { id: 3, name: 'Фанера' },
-    { id: 4, name: 'ДСП' }
-  ];
+  isLoading = false;
+  isSubmitting = false;
 
   constructor(
     private fb: FormBuilder,
+    private commonService: CommonService,
     private purchaseService: PurchaseService,
-    private router: Router,
-    private route: ActivatedRoute
+    private notificationService: NotificationService,
+    private router: Router
   ) {
     this.purchaseForm = this.createForm();
   }
 
-  ngOnInit(): void {
-    this.purchaseId = this.route.snapshot.paramMap.get('id');
-    this.isEditMode = !!this.purchaseId;
-
-    if (this.isEditMode && this.purchaseId) {
-      this.loadPurchase(this.purchaseId);
-    }
+  ngOnInit() {
+    this.loadData();
   }
 
   createForm(): FormGroup {
@@ -61,66 +55,130 @@ export class PurchaseFormComponent implements OnInit {
       supplierId: ['', Validators.required],
       facilityId: ['', Validators.required],
       productId: ['', Validators.required],
-      quantity: ['', [Validators.required, Validators.min(0.1)]],
-      amount: ['', [Validators.required, Validators.min(0)]]
+      quantity: [1, [Validators.required, Validators.min(0.01)]],
+      amount: [0, [Validators.required, Validators.min(0)]]
     });
   }
 
-  loadPurchase(id: string): void {
-    this.loading = true;
-    this.purchaseService.getPurchaseById(id).subscribe({
-      next: (purchase) => {
-        // Для редактирования нужно будет загрузить дополнительные данные
-        // или изменить API чтобы возвращались ID вместо названий
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading purchase:', error);
-        this.loading = false;
-      }
+  loadData() {
+    this.isLoading = true;
+
+    // Загружаем данные параллельно
+    Promise.all([
+      this.commonService.getSuppliers().toPromise(),
+      this.commonService.getFacilities().toPromise(),
+      this.commonService.getProducts().toPromise()
+    ]).then(([suppliers, facilities, products]) => {
+      this.suppliers = suppliers?.data || [];
+      this.facilities = facilities?.data || [];
+      this.products = products?.data || [];
+      this.isLoading = false;
+    }).catch(error => {
+      console.error('Error loading data:', error);
+      this.isLoading = false;
     });
   }
 
-  onSubmit(): void {
-    this.submitted = true;
+  get supplierOptions() {
+    return this.suppliers.map(supplier => ({
+      value: supplier.id.toString(),
+      label: `${supplier.name}`
+    }));
+  }
 
+  get facilityOptions() {
+    return this.facilities.map(facility => ({
+      value: facility.id.toString(),
+      label: `${facility.name}`
+    }));
+  }
+
+  get productOptions() {
+    return this.products.map(product => ({
+      value: product.id.toString(),
+      label: `${product.name}`
+    }));
+  }
+
+  getUnitOfMeasureLabel(unit: UnitOfMeasureEnum): string {
+    const unitLabels = {
+      [UnitOfMeasureEnum.Piece]: 'шт',
+      [UnitOfMeasureEnum.Kilogram]: 'кг',
+      [UnitOfMeasureEnum.Meter]: 'м',
+      [UnitOfMeasureEnum.Liter]: 'л',
+      [UnitOfMeasureEnum.SquareMeter]: 'м²',
+      [UnitOfMeasureEnum.CubicMeter]: 'м³'
+    };
+    return unitLabels[unit] || '';
+  }
+
+  getSelectedProduct() {
+    const productId = this.purchaseForm.get('productId')?.value;
+    return this.products.find(p => p.id.toString() === productId);
+  }
+
+  incrementQuantity() {
+    const current = this.purchaseForm.get('quantity')?.value || 0;
+    this.purchaseForm.patchValue({ quantity: current + 1 });
+  }
+
+  decrementQuantity() {
+    const current = this.purchaseForm.get('quantity')?.value || 0;
+    if (current > 1) {
+      this.purchaseForm.patchValue({ quantity: current - 1 });
+    }
+  }
+
+  onCreatePurchase() {
     if (this.purchaseForm.invalid) {
+      this.markFormGroupTouched();
       return;
     }
 
-    this.loading = true;
-    const formValue = this.purchaseForm.value;
+    this.isSubmitting = true;
 
+    const formValue = this.purchaseForm.value;
     const command: CreateOrUpdatePurchaseCommand = {
-      id: this.isEditMode ? this.purchaseId! : undefined,
-      supplierId: Number(formValue.supplierId),
-      facilityId: Number(formValue.facilityId),
-      productId: Number(formValue.productId),
-      quantity: Number(formValue.quantity),
-      amount: Number(formValue.amount)
+      supplierId: parseInt(formValue.supplierId),
+      facilityId: parseInt(formValue.facilityId),
+      productId: parseInt(formValue.productId),
+      quantity: formValue.quantity,
+      amount: formValue.amount
     };
 
-    const operation = this.isEditMode 
-      ? this.purchaseService.updatePurchase(command)
-      : this.purchaseService.createPurchase(command);
-
-    operation.subscribe({
-      next: (result) => {
-        this.loading = false;
-        this.router.navigate(['/purchases']);
+    this.purchaseService.createPurchase(command).subscribe({
+      next: (response) => {
+        this.isSubmitting = false;
+        if (response.isSuccess) {
+          
+          this.notificationService.success('Закупка успешно создана');
+          setTimeout(() => {
+            this.router.navigate(['/purchases']);
+          }, 1000);
+          
+        } else {
+          this.notificationService.error(response.errorMessage);
+        }
       },
       error: (error) => {
-        console.error('Error saving purchase:', error);
-        this.loading = false;
+        console.error('Error creating purchase:', error);
+        this.isSubmitting = false;
+        // Здесь можно добавить обработку ошибки
       }
     });
   }
 
-  onCancel(): void {
-    this.router.navigate(['/purchases']);
+  private markFormGroupTouched() {
+    Object.keys(this.purchaseForm.controls).forEach(key => {
+      const control = this.purchaseForm.get(key);
+      control?.markAsTouched();
+    });
   }
 
-  get f() {
-    return this.purchaseForm.controls;
-  }
+  // Геттеры для удобства доступа к контролам в шаблоне
+  get supplierId() { return this.purchaseForm.get('supplierId'); }
+  get facilityId() { return this.purchaseForm.get('facilityId'); }
+  get productId() { return this.purchaseForm.get('productId'); }
+  get quantity() { return this.purchaseForm.get('quantity'); }
+  get amount() { return this.purchaseForm.get('amount'); }
 }

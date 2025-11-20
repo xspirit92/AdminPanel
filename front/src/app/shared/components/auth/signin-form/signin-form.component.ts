@@ -14,7 +14,7 @@ import { FormsModule } from '@angular/forms';
     LabelComponent,
     CheckboxComponent,
     ButtonComponent,
-    InputFieldComponent,
+    // InputFieldComponent,
     RouterModule,
     FormsModule,
   ],

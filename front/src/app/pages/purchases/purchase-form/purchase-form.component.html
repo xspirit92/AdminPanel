@@ -1,133 +1,152 @@
-<div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-  <div class="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
-    <h3 class="font-medium text-black dark:text-white">
-      {{ isEditMode ? 'Редактирование закупки' : 'Создание новой закупки' }}
-    </h3>
+<app-page-breadcrumb 
+  pageTitle="Создание закупки"
+  [breadcrumbs]="[
+    { label: 'Закупки', routerLink: '/purchases' },
+    { label: 'Создание' }
+  ]"
+/>
+<div class="space-y-6">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-8">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+    <p class="mt-2 text-gray-600">Загрузка данных...</p>
   </div>
 
-  <form [formGroup]="purchaseForm" (ngSubmit)="onSubmit()" class="p-6.5">
-    <div class="mb-4.5 grid grid-cols-1 gap-6 md:grid-cols-2">
-      <!-- Поставщик -->
-      <div class="w-full">
-        <label class="mb-3 block text-sm font-medium text-black dark:text-white">
-          Поставщик *
-        </label>
-        <select 
-          formControlName="supplierId"
-          class="w-full rounded border border-stroke bg-gray-50 py-3 px-4.5 text-black focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          [class.border-danger]="submitted && f['supplierId'].errors"
-        >
-          <option value="">Выберите поставщика</option>
-          <option *ngFor="let supplier of suppliers" [value]="supplier.id">
-            {{ supplier.name }}
-          </option>
-        </select>
-        <div *ngIf="submitted && f['supplierId'].errors" class="mt-1 text-sm text-danger">
-          Выберите поставщика
-        </div>
+  <!-- Purchase Form -->
+  <div *ngIf="!isLoading" class="space-y-6">
+    <!-- Purchase Details Section -->
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+        <h2 class="text-lg font-medium text-gray-800 dark:text-white">
+          Детали закупки
+        </h2>
       </div>
+      <div class="p-4 sm:p-6 dark:border-gray-800">
+        <form [formGroup]="purchaseForm">
+          <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <!-- Supplier -->
+            <div>
+              <app-label for="supplier">Поставщик *</app-label>
+              <app-select
+                id="supplier"
+                formControlName="supplierId"
+                [options]="supplierOptions"
+                placeholder="Выберите поставщика"
+              ></app-select>
+              <div *ngIf="supplierId?.invalid && supplierId?.touched" class="text-red-500 text-sm mt-1">
+                Выберите поставщика
+              </div>
+            </div>
 
-      <!-- Объект -->
-      <div class="w-full">
-        <label class="mb-3 block text-sm font-medium text-black dark:text-white">
-          Объект *
-        </label>
-        <select 
-          formControlName="facilityId"
-          class="w-full rounded border border-stroke bg-gray-50 py-3 px-4.5 text-black focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          [class.border-danger]="submitted && f['facilityId'].errors"
-        >
-          <option value="">Выберите объект</option>
-          <option *ngFor="let facility of facilities" [value]="facility.id">
-            {{ facility.name }}
-          </option>
-        </select>
-        <div *ngIf="submitted && f['facilityId'].errors" class="mt-1 text-sm text-danger">
-          Выберите объект
-        </div>
+            <!-- Facility -->
+            <div>
+              <app-label for="facility">Производство *</app-label>
+              <app-select
+                id="facility"
+                formControlName="facilityId"
+                [options]="facilityOptions"
+                placeholder="Выберите производство"
+              ></app-select>
+              <div *ngIf="facilityId?.invalid && facilityId?.touched" class="text-red-500 text-sm mt-1">
+                Выберите производство
+              </div>
+            </div>
+
+            <!-- Product -->
+            <div class="col-span-full">
+              <app-label for="product">Материал/Сырье *</app-label>
+              <app-select
+                id="product"
+                formControlName="productId"
+                [options]="productOptions"
+                placeholder="Выберите материал"
+              ></app-select>
+              <div *ngIf="productId?.invalid && productId?.touched" class="text-red-500 text-sm mt-1">
+                Выберите материал
+              </div>
+            </div>
+          </div>
+
+          <!-- Quantity & Pricing Section -->
+          <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+            <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-5">
+              Количество и стоимость
+            </h3>
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <!-- Quantity -->
+              <div>
+                <label class="mb-1 inline-block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                  Количество *
+                </label>
+                <div class="flex h-11 divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 dark:divide-gray-800 dark:border-gray-700"
+                     [class.border-red-500]="quantity?.invalid && quantity?.touched">
+                  <button
+                    type="button"
+                    class="inline-flex h-11 w-11 items-center justify-center bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                    (click)="decrementQuantity()"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
+                      <path d="M6.66699 12H18.6677" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <div class="flex-1 dark:bg-gray-900">
+                    <app-input-field
+                      type="number"
+                      formControlName="quantity"
+                      className="h-full w-full border-0 bg-white text-center text-sm text-gray-700 outline-none focus:ring-0 dark:bg-gray-900 dark:text-gray-400"
+                    ></app-input-field>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex h-11 w-11 items-center justify-center bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                    (click)="incrementQuantity()"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
+                      <path d="M6.66699 12.0002H18.6677M12.6672 6V18.0007" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <div *ngIf="quantity?.invalid && quantity?.touched" class="text-red-500 text-sm mt-1">
+                  <div *ngIf="quantity?.errors?.['required']">Введите количество</div>
+                  <div *ngIf="quantity?.errors?.['min']">Количество должно быть больше 0</div>
+                </div>
+                <div *ngIf="getSelectedProduct()" class="text-sm text-gray-500 mt-1">
+                  Единица измерения: {{ getUnitOfMeasureLabel(getSelectedProduct()!.unitOfMeasure) }}
+                </div>
+              </div>
+
+              <!-- Amount -->
+              <div>
+                <app-label for="amount">Сумма закупки (руб.) *</app-label>
+                <app-input-field
+                  id="amount"
+                  type="number"
+                  formControlName="amount"
+                  placeholder="0.00"
+                  [step]="0.01"
+                  [class]="amount?.invalid && amount?.touched ? 'border-red-500' : ''"
+                ></app-input-field>
+                <div *ngIf="amount?.invalid && amount?.touched" class="text-red-500 text-sm mt-1">
+                  <div *ngIf="amount?.errors?.['required']">Введите сумму</div>
+                  <div *ngIf="amount?.errors?.['min']">Сумма должна быть положительной</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
 
-    <div class="mb-4.5 grid grid-cols-1 gap-6 md:grid-cols-2">
-      <!-- Продукт -->
-      <div class="w-full">
-        <label class="mb-3 block text-sm font-medium text-black dark:text-white">
-          Продукт *
-        </label>
-        <select 
-          formControlName="productId"
-          class="w-full rounded border border-stroke bg-gray-50 py-3 px-4.5 text-black focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          [class.border-danger]="submitted && f['productId'].errors"
-        >
-          <option value="">Выберите продукт</option>
-          <option *ngFor="let product of products" [value]="product.id">
-            {{ product.name }}
-          </option>
-        </select>
-        <div *ngIf="submitted && f['productId'].errors" class="mt-1 text-sm text-danger">
-          Выберите продукт
-        </div>
-      </div>
-
-      <!-- Количество -->
-      <div class="w-full">
-        <label class="mb-3 block text-sm font-medium text-black dark:text-white">
-          Количество *
-        </label>
-        <input
-          type="number"
-          formControlName="quantity"
-          step="0.1"
-          min="0.1"
-          placeholder="Введите количество"
-          class="w-full rounded border border-stroke bg-gray-50 py-3 px-4.5 text-black focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          [class.border-danger]="submitted && f['quantity'].errors"
-        />
-        <div *ngIf="submitted && f['quantity'].errors" class="mt-1 text-sm text-danger">
-          <div *ngIf="f['quantity'].errors?.['required']">Введите количество</div>
-          <div *ngIf="f['quantity'].errors?.['min']">Количество должно быть больше 0</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="mb-4.5">
-      <!-- Сумма -->
-      <div class="w-full md:w-1/2">
-        <label class="mb-3 block text-sm font-medium text-black dark:text-white">
-          Сумма (руб) *
-        </label>
-        <input
-          type="number"
-          formControlName="amount"
-          step="0.01"
-          min="0"
-          placeholder="Введите сумму"
-          class="w-full rounded border border-stroke bg-gray-50 py-3 px-4.5 text-black focus:border-primary dark:border-strokedark dark:bg-meta-4 dark:text-white dark:focus:border-primary"
-          [class.border-danger]="submitted && f['amount'].errors"
-        />
-        <div *ngIf="submitted && f['amount'].errors" class="mt-1 text-sm text-danger">
-          <div *ngIf="f['amount'].errors?.['required']">Введите сумму</div>
-          <div *ngIf="f['amount'].errors?.['min']">Сумма должна быть положительной</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Buttons -->
-    <div class="flex justify-end gap-3 mt-8">
-      <button
-        type="button"
-        (click)="onCancel()"
-        class="flex justify-center rounded border border-stroke py-2 px-6 font-medium text-black hover:shadow-1 dark:border-strokedark dark:text-white"
+    <!-- Action Buttons -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <app-button 
+        variant="primary" 
+        (btnClick)="onCreatePurchase()"
+        [disabled]="purchaseForm.invalid || isSubmitting"
       >
-        Отмена
-      </button>
-      <button
-        type="submit"
-        [disabled]="loading"
-        class="flex justify-center rounded bg-primary py-2 px-6 font-medium text-gray-100 hover:bg-opacity-90 disabled:opacity-50"
-      >
-        {{ loading ? 'Сохранение...' : (isEditMode ? 'Обновить' : 'Создать') }}
-      </button>
+        <span *ngIf="!isSubmitting">Создать закупку</span>
+        <span *ngIf="isSubmitting">Создание...</span>
+      </app-button>
     </div>
-  </form>
+  </div>
 </div>

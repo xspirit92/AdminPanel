@@ -19,6 +19,7 @@ import { SignInComponent } from './pages/auth-pages/sign-in/sign-in.component';
 import { SignUpComponent } from './pages/auth-pages/sign-up/sign-up.component';
 import { CalenderComponent } from './pages/calender/calender.component';
 import { PurchaseListComponent } from './pages/purchases/purchase-list/purchase-list.component';
+import { AddProductFormComponent } from './shared/components/ecommerce/add-product-form/add-product-form.component';
 
 export const routes: Routes = [
   {
@@ -33,9 +34,15 @@ export const routes: Routes = [
           'Angular Ecommerce Dashboard | TailAdmin - Angular Admin Dashboard Template',
       },
       {
+        path: 'add-product',
+        component: AddProductFormComponent,
+        title:
+          'Angular Ecommerce Dashboard | TailAdmin - Angular Admin Dashboard Template',
+      },
+      {
         path:'purchases',
-        component:PurchaseListComponent,
-        title:'Закупки'
+        title:'Закупки',
+        loadChildren: () => import('./pages/purchases/purchases.module').then(m => m.PurchasesModule)
       },
       {
         path:'calendar',

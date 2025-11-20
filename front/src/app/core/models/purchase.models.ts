@@ -32,6 +32,59 @@ export interface CreateOrUpdatePurchaseCommand {
   productId: number;
   amount: number;
   quantity: number;
+}export interface SupplierDto {
+  id: number;
+  name: string;
+  address: string;
+}
+
+export interface FacilityDto {
+  id: number;
+  name: string;
+  address: string;
+}
+
+export interface ProductDto {
+  id: number;
+  name: string;
+  productType: ProductTypeEnum;
+  unitOfMeasure: UnitOfMeasureEnum;
+  activeSpecification?: ProductSpecificationDto;
+}
+
+export interface ProductSpecificationDto {
+  id: number;
+  productId: number;
+  version: string;
+  isActive: boolean;
+  dateCreated: string;
+  items: ProductSpecificationItemDto[];
+}
+
+export interface ProductSpecificationItemDto {
+  id: number;
+  productSpecificationId: number;
+  productId: number;
+  productName: string;
+  productType: ProductTypeEnum;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasureEnum;
+}
+
+export enum ProductTypeEnum {
+  RawMaterial = 1,
+  SemiFinished = 2,
+  ComplexSemiFinished = 3,
+  Finished = 4
+}
+
+export enum UnitOfMeasureEnum {
+  Piece = 1,
+  Kilogram = 2,
+  Meter = 3,
+  Liter = 4,
+  SquareMeter = 5,
+  CubicMeter = 6
 }
 
 export enum PurchaseStatusEnum {

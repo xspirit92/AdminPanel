@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { ApiService } from './api.service';
+import { Result } from '../models/purchase.models';
 
 export interface SupplierDto {
   id: number;
@@ -27,15 +28,15 @@ export interface ProductDto {
 export class CommonService {
   constructor(private apiService: ApiService) {}
 
-  getSuppliers(): Observable<SupplierDto[]> {
-    return this.apiService.get<SupplierDto[]>('/api/Supplier');
+  getSuppliers(): Observable<Result<SupplierDto[]>> {
+    return this.apiService.get<Result<SupplierDto[]>>('/api/supplier/list');
   }
 
-  getFacilities(): Observable<FacilityDto[]> {
-    return this.apiService.get<FacilityDto[]>('/api/Facility');
+  getFacilities(): Observable<Result<FacilityDto[]>> {
+    return this.apiService.get<Result<FacilityDto[]>>('/api/facility/list');
   }
 
-  getProducts(): Observable<ProductDto[]> {
-    return this.apiService.get<ProductDto[]>('/api/Product');
+  getProducts(): Observable<Result<ProductDto[]>> {
+    return this.apiService.get<Result<ProductDto[]>>('/api/product/list');
   }
 }

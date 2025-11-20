@@ -38,6 +38,7 @@ export class AppSidebarComponent {
       name: "Dashboard",
       subItems: [
         { name: "Ecommerce", path: "/" },
+        { name: "Add Product", path: "/add-product" },
       ],
     },
     {

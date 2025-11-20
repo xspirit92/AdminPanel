@@ -80,27 +80,27 @@
       <form (ngSubmit)="onSignIn()" class="space-y-6">
         <div>
           <app-label>Email <span class="text-error-500">*</span></app-label>
-          <app-input-field
+          <!-- <app-input-field
             type="email"
             placeholder="info@gmail.com"
             [value]="email"
             name="email"
             class="form-input"
             required
-          />
+          /> -->
         </div>
 
         <div>
           <app-label>Password <span class="text-error-500">*</span></app-label>
           <div class="relative">
-            <app-input-field
+            <!-- <app-input-field
               [type]="showPassword ? 'text' : 'password'"
               placeholder="Enter your password"
               [value]="password"
               name="password"
               class="form-input"
               required
-            />
+            /> -->
             <span
               (click)="togglePasswordVisibility()"
               class="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"

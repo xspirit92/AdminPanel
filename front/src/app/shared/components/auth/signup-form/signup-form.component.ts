@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
     CommonModule,
     LabelComponent,
     CheckboxComponent,
-    InputFieldComponent,
+    // InputFieldComponent,
     RouterModule,
     FormsModule,
   ],

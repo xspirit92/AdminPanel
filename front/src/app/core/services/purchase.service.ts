@@ -17,6 +17,7 @@ export interface PurchaseFilter {
   endDate?: string;
   pageNumber?: number;
   pageSize?: number;
+  searchTerm?: string;
   sortBy?: string;
   sortDescending?: boolean;
 }
@@ -25,7 +26,7 @@ export interface PurchaseFilter {
   providedIn: 'root'
 })
 export class PurchaseService {
-  private endpoint = '/api/Purchase';
+  private endpoint = '/api/purchase';
 
   constructor(private apiService: ApiService) {}
 
@@ -33,19 +34,20 @@ export class PurchaseService {
     return this.apiService.get<Result<PagedListDto>>(this.endpoint, filter);
   }
 
-  getPurchaseById(id: string): Observable<PurchaseDto> {
-    return this.apiService.get<PurchaseDto>(`${this.endpoint}/${id}`);
+  getPurchaseById(id: string): Observable<Result<PurchaseDto>> {
+    return this.apiService.get<Result<PurchaseDto>>(`${this.endpoint}/${id}`);
   }
 
-  createPurchase(command: CreateOrUpdatePurchaseCommand): Observable<PurchaseDto> {
-    return this.apiService.post<PurchaseDto>(this.endpoint, command);
+  createPurchase(command: CreateOrUpdatePurchaseCommand): Observable<Result<PurchaseDto>> {
+    return this.apiService.post<Result<PurchaseDto>>(this.endpoint, command);
   }
 
-  updatePurchase(command: CreateOrUpdatePurchaseCommand): Observable<PurchaseDto> {
-    return this.apiService.post<PurchaseDto>(this.endpoint, command);
+  updatePurchase(command: CreateOrUpdatePurchaseCommand): Observable<Result<PurchaseDto>> {
+    return this.apiService.post<Result<PurchaseDto>>(this.endpoint, command);
   }
 
-  deletePurchase(id: string): Observable<PurchaseDto> {
-    return this.apiService.delete<PurchaseDto>(`${this.endpoint}/${id}`);
+  deletePurchase(id: string): Observable<Result<PurchaseDto>> {
+    return this.apiService.delete<Result<PurchaseDto>>(`${this.endpoint}/${id}`);
   }
+  
 }
