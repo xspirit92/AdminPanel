@@ -1,0 +1,162 @@
+<app-page-breadcrumb 
+  [pageTitle]="pageTitle"
+  [breadcrumbs]="[
+    { label: 'Закупки', routerLink: '/purchases' },
+    { label: isEditMode ? 'Редактирование' : 'Создание' }
+  ]"
+/>
+
+<div class="space-y-6">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-8">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto dark:border-white"></div>
+    <p class="mt-2 text-gray-600 dark:text-gray-400">Загрузка данных...</p>
+  </div>
+
+  <!-- Purchase Form -->
+  <div *ngIf="!isLoading" class="space-y-6">
+    <!-- Purchase Details Section -->
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+        <h2 class="text-lg font-medium text-gray-800 dark:text-white">
+          Детали закупки
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" *ngIf="isEditMode && currentPurchase">
+          ID: {{ currentPurchase.id }}
+        </p>
+      </div>
+      <div class="p-4 sm:p-6 dark:border-gray-800">
+        <form [formGroup]="purchaseForm">
+          <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <!-- Supplier -->
+            <div>
+              <app-label for="supplier">Поставщик *</app-label>
+              <app-select
+                id="supplier"
+                formControlName="supplierId"
+                [options]="supplierOptions"
+                placeholder="Выберите поставщика"
+              ></app-select>
+              <div *ngIf="supplierId?.invalid && supplierId?.touched" class="text-red-500 text-sm mt-1">
+                Выберите поставщика
+              </div>
+            </div>
+
+            <!-- Facility -->
+            <div>
+              <app-label for="facility">Производство *</app-label>
+              <app-select
+                id="facility"
+                formControlName="facilityId"
+                [options]="facilityOptions"
+                placeholder="Выберите производство"
+              ></app-select>
+              <div *ngIf="facilityId?.invalid && facilityId?.touched" class="text-red-500 text-sm mt-1">
+                Выберите производство
+              </div>
+            </div>
+
+            <!-- Product -->
+            <div class="col-span-full">
+              <app-label for="product">Сырье *</app-label>
+              <app-select
+                id="product"
+                formControlName="productId"
+                [options]="productOptions"
+                placeholder="Выберите сырье"
+              ></app-select>
+              <div *ngIf="productId?.invalid && productId?.touched" class="text-red-500 text-sm mt-1">
+                Выберите сырье
+              </div>
+            </div>
+          </div>
+
+          <!-- Quantity & Pricing Section -->
+          <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-800">
+            <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-5">
+              Количество и стоимость
+            </h3>
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <!-- Quantity -->
+              <div>
+                <label class="mb-1 inline-block text-sm font-semibold text-gray-700 dark:text-gray-400">
+                  Количество *
+                </label>
+                <div class="flex h-11 divide-x divide-gray-300 overflow-hidden rounded-lg border border-gray-300 dark:divide-gray-800 dark:border-gray-700"
+                     [class.border-red-500]="quantity?.invalid && quantity?.touched">
+                  <button
+                    type="button"
+                    class="inline-flex h-11 w-11 items-center justify-center bg-white text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                    (click)="decrementQuantity()"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
+                      <path d="M6.66699 12H18.6677" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <div class="flex-1 dark:bg-gray-900">
+                    <app-input-field
+                      type="number"
+                      formControlName="quantity"
+                      className="h-full w-full border-0 bg-white text-center text-sm text-gray-700 outline-none focus:ring-0 dark:bg-gray-900 dark:text-gray-400"
+                    ></app-input-field>
+                  </div>
+                  <button
+                    type="button"
+                    class="inline-flex h-11 w-11 items-center justify-center bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                    (click)="incrementQuantity()"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
+                      <path d="M6.66699 12.0002H18.6677M12.6672 6V18.0007" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <div *ngIf="quantity?.invalid && quantity?.touched" class="text-red-500 text-sm mt-1">
+                  <div *ngIf="quantity?.errors?.['required']">Введите количество</div>
+                  <div *ngIf="quantity?.errors?.['min']">Количество должно быть больше 0</div>
+                </div>
+                <div *ngIf="getSelectedProduct()" class="text-sm text-gray-500 mt-1">
+                  Единица измерения: {{ getUnitOfMeasureLabel(getSelectedProduct()!.unitOfMeasure) }}
+                </div>
+              </div>
+
+              <!-- Amount -->
+              <div>
+                <app-label for="amount">Сумма закупки (руб.) *</app-label>
+                <app-input-field
+                  id="amount"
+                  type="number"
+                  formControlName="amount"
+                  placeholder="0.00"
+                  [step]="0.01"
+                  [class]="amount?.invalid && amount?.touched ? 'border-red-500' : ''"
+                ></app-input-field>
+                <div *ngIf="amount?.invalid && amount?.touched" class="text-red-500 text-sm mt-1">
+                  <div *ngIf="amount?.errors?.['required']">Введите сумму</div>
+                  <div *ngIf="amount?.errors?.['min']">Сумма должна быть положительной</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <app-button 
+        variant="outline" 
+        (btnClick)="onCancel()"
+        [disabled]="isSubmitting"
+      >
+        Отмена
+      </app-button>
+      <app-button 
+        variant="primary" 
+        (btnClick)="onSubmit()"
+        [disabled]="purchaseForm.invalid || isSubmitting"
+      >
+        {{ submitButtonText }}
+      </app-button>
+    </div>
+  </div>
+</div>

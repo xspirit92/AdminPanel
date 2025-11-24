@@ -1,0 +1,135 @@
+@CubArt.Api_HostAddress = http://localhost:5186
+
+### Создание закупки сырья
+POST {{CubArt.Api_HostAddress}}/api/purchase
+Content-Type: application/json
+
+{
+    "facilityId": 2,
+    "supplierId": 2,
+    "productId": 2,
+    "quantity": 100.50,
+    "amount": 30.21
+}
+###
+
+### Получение всех закупок
+GET {{CubArt.Api_HostAddress}}/api/purchase?pageNumber=1&pageSize=10&sortBy=amount&sortDescending=false
+Accept: application/json
+###
+
+### Получение закупки по id
+GET {{CubArt.Api_HostAddress}}/api/purchase/019a72b7-cc77-75c6-a5c0-ca23c069fbdc
+Accept: application/json
+###
+
+###==============================================================================
+
+### Создание оплаты закупки
+POST {{CubArt.Api_HostAddress}}/api/payment
+Content-Type: application/json
+
+{
+    "purchaseId": "019a72b7-cc77-75c6-a5c0-ca23c069fbdc",
+    "paymentMethod": 1,
+    "amount": 29.79
+}
+###
+
+### Получение всех оплат
+GET {{CubArt.Api_HostAddress}}/api/payment?pageNumber=1&pageSize=10&sortBy=amount&sortDescending=true
+Accept: application/json
+###
+
+### Получение оплаты по id
+GET {{CubArt.Api_HostAddress}}/api/payment/019a7440-4a6a-7925-a53d-5883d67b0a2c
+Accept: application/json
+###
+
+###==============================================================================
+
+### Создание или обновление продукции
+POST {{CubArt.Api_HostAddress}}/api/product
+Content-Type: application/json
+
+{
+    "id": 7,
+    "name": "Борт торцевой 1850 Белла2 20*90*1850",
+    "productType": 2,
+    "unitOfMeasure": 5,
+    "specification": 
+    {
+        "items":
+        [
+            {
+                "productId": 1,
+                "quantity": 0.00333
+            }
+        ]
+    }
+}
+###
+
+### Получение всей продукции
+GET {{CubArt.Api_HostAddress}}/api/product?pageNumber=1&pageSize=10&sortBy=amount&sortDescending=false
+Accept: application/json
+###
+
+### Получение закупки по id
+GET {{CubArt.Api_HostAddress}}/api/product/7
+Accept: application/json
+###
+
+###==============================================================================
+
+### Создание поставки
+POST {{CubArt.Api_HostAddress}}/api/supply
+Content-Type: application/json
+
+{
+    "purchaseId": "019a72b7-cc77-75c6-a5c0-ca23c069fbdc",
+    "quantity": 5
+}
+###
+
+### Получение всех поставок
+GET {{CubArt.Api_HostAddress}}/api/supply?pageNumber=1&pageSize=10&sortBy=dateCreated&sortDescending=false
+Accept: application/json
+###
+
+### Получение поставки по id
+GET {{CubArt.Api_HostAddress}}/api/supply/019a7de0-30f5-7775-8591-859532c5e0f0
+Accept: application/json
+###
+
+###==============================================================================
+
+### Получение всех балансов
+GET {{CubArt.Api_HostAddress}}/api/stockbalanceview?pageNumber=1&pageSize=10&sortBy=productName&sortDescending=false
+Accept: application/json
+###
+
+###==============================================================================
+
+### Создание производтсва
+POST {{CubArt.Api_HostAddress}}/api/production
+Content-Type: application/json
+
+{
+    "productId": "7",
+    "facilityId": 2,
+    "quantity": 500
+}
+###
+
+### Получение всех производств
+GET {{CubArt.Api_HostAddress}}/api/production?pageNumber=1&pageSize=10&sortBy=dateCreated&sortDescending=false
+Accept: application/json
+###
+
+### Получение производства по id
+GET {{CubArt.Api_HostAddress}}/api/production/019a8274-510d-73f2-9176-d195d45d91fe
+Accept: application/json
+###
+
+###==============================================================================
