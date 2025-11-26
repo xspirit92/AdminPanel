@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgClass } from '@angular/common';
 
 export interface BreadcrumbItem {
   label: string;
@@ -12,6 +12,7 @@ export interface BreadcrumbItem {
   imports: [
     CommonModule,
     RouterModule,
+    NgClass
   ],
   templateUrl: './page-breadcrumb.component.html',
   styles: ``

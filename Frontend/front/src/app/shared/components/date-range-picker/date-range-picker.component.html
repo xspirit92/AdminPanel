@@ -36,8 +36,10 @@
           class="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
           [class.bg-brand-50]="selectedPreset === preset.key"
           [class.text-brand-700]="selectedPreset === preset.key"
-          [class.dark:bg-brand-500/20]="selectedPreset === preset.key"
           [class.dark:text-brand-300]="selectedPreset === preset.key"
+          [ngClass]="{
+            'dark:bg-brand-500/20': selectedPreset === preset.key
+          }"
         >
           {{ preset.label }}
         </button>

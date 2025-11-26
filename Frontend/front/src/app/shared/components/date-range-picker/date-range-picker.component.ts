@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgClass } from '@angular/common';
 import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, AfterViewInit, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import flatpickr from 'flatpickr';
 import "flatpickr/dist/flatpickr.css";
@@ -13,7 +13,7 @@ interface DateRangePreset {
 
 @Component({
   selector: 'app-date-range-picker',
-  imports: [CommonModule, LabelComponent],
+  imports: [CommonModule, LabelComponent, NgClass],
   templateUrl: './date-range-picker.component.html',
   styles: ``
 })

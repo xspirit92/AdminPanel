@@ -17,9 +17,11 @@
             <span 
               class="text-sm"
               [class.text-gray-800]="last"
-              [class.dark:text-white/90]="last"
               [class.text-gray-500]="!last"
-              [class.dark:text-gray-400]="!last"
+              [ngClass]="{
+                'dark:text-white/90': last,
+                'dark:text-gray-400': !last
+              }"
             >
               {{ item.label }}
             </span>
