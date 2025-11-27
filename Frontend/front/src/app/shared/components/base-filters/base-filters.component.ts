@@ -1,10 +1,12 @@
-import { 
-  Component, 
-  Input, 
-  Output, 
-  EventEmitter, 
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
   SimpleChanges,
-  ChangeDetectionStrategy 
+  ChangeDetectionStrategy,
+  OnInit,
+  OnChanges
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -44,7 +46,7 @@ export interface FilterValues {
   selector: 'app-base-filters',
   standalone: true,
   imports: [
-    CommonModule, 
+    CommonModule,
     FormsModule,
     ModalComponent,
     LabelComponent,
@@ -54,7 +56,8 @@ export interface FilterValues {
   templateUrl: './base-filters.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BaseFiltersComponent {
+export class BaseFiltersComponent implements OnInit, OnChanges {
+
   // Inputs
   @Input() filters: FilterField[] = [];
   @Input() filterValues: FilterValues = {};
@@ -71,13 +74,19 @@ export class BaseFiltersComponent {
   // Делаем публичным для использования в шаблоне
   tempFilterValues: FilterValues = {};
 
+  ngOnInit(): void {
+    this.tempFilterValues = { ...this.filterValues };
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
-    // Инициализируем временные значения при открытии модалки
+    if (changes['filterValues']) {
+      this.tempFilterValues = { ...this.filterValues };
+    }
+
     if (changes['isFilterModalOpen']?.currentValue === true) {
       this.tempFilterValues = { ...this.filterValues };
     }
 
-    // Обрабатываем сброс фильтров
     if (changes['resetTrigger']?.currentValue === true) {
       this.tempFilterValues = {};
     }
@@ -135,7 +144,7 @@ export class BaseFiltersComponent {
    */
   hasFilterValue(key: string): boolean {
     const value = this.tempFilterValues[key];
-    
+
     if (value === null || value === undefined || value === '') {
       return false;
     }

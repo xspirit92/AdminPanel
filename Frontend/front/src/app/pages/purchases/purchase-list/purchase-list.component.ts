@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, takeUntil, debounceTime, distinctUntilChanged } from 'rxjs';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
 import { PurchaseStatusLabels, PurchaseStatusEnum } from '../../../core/models/purchase.models';
 import { BadgeComponent } from '../../../shared/components/ui/badge/badge.component';
 import { PageBreadcrumbComponent } from '../../../shared/components/common/page-breadcrumb/page-breadcrumb.component';
@@ -11,23 +11,23 @@ import { DateRangePickerComponent } from '../../../shared/components/date-range-
 import { SelectComponent } from '../../../shared/components/form/select/select.component';
 import { ModalComponent } from '../../../shared/components/ui/modal/modal.component';
 import { ButtonComponent } from '../../../shared/components/ui/button/button.component';
-import { 
-  ApiPurchaseGetRequestParams, 
-  ApiPurchaseIdDeleteRequestParams, 
-  FacilityDto, 
-  FacilityService, 
-  ProductDto, 
-  ProductService, 
-  PurchaseDto, 
-  PurchaseService, 
-  SupplierDto, 
-  SupplierService 
+import {
+  ApiPurchaseGetRequestParams,
+  ApiPurchaseIdDeleteRequestParams,
+  FacilityDto,
+  FacilityService,
+  ProductDto,
+  ProductService,
+  PurchaseDto,
+  PurchaseService,
+  SupplierDto,
+  SupplierService
 } from '../../../api';
-import { 
-  BaseFiltersComponent, 
-  FilterField, 
+import {
+  BaseFiltersComponent,
+  FilterField,
   FilterValues,
-  FilterOption 
+  FilterOption
 } from '../../../shared/components/base-filters/base-filters.component';
 import { BaseTableComponent, TableColumn, SortConfig } from '../../../shared/components/base-table/base-table.component';
 import { SearchComponent } from '../../../shared/components/search/search.component';
@@ -168,6 +168,7 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
   // Constants
   purchaseStatusLabels = PurchaseStatusLabels;
   purchaseStatusEnum = PurchaseStatusEnum;
+  private searchSubject = new Subject<string>();
 
   constructor(
     private purchaseService: PurchaseService,
@@ -180,6 +181,17 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadFilterData();
     this.loadPurchases();
+
+    // Debounce поиска (300ms)
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(term => {
+      this.searchTerm = term;
+      this.currentPage = 1;
+      this.loadPurchases();
+    });
   }
 
   ngOnDestroy(): void {
@@ -310,18 +322,22 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
     };
 
     this.purchaseService.apiPurchaseGet(filterParams)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.loading = false)
+      )
       .subscribe({
         next: (response) => {
           const data = response.data || {};
           this.purchases = data.items || [];
           this.totalItems = data.totalCount ?? 0;
           this.totalPages = data.totalPages ?? 0;
-          this.loading = false;
         },
         error: (error) => {
           console.error('Error loading purchases:', error);
-          this.loading = false;
+          this.purchases = [];
+          this.totalItems = 0;
+          this.totalPages = 0;
         }
       });
   }
@@ -332,21 +348,25 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
   private convertFiltersToApiParams(filters: FilterValues): Partial<ApiPurchaseGetRequestParams> {
     const params: Partial<ApiPurchaseGetRequestParams> = {};
 
-    if (filters['supplierId']) {
+    if (filters['supplierId'] && !isNaN(Number(filters['supplierId']))) {
       params.supplierId = Number(filters['supplierId']);
     }
 
-    if (filters['facilityId']) {
+    if (filters['facilityId'] && !isNaN(Number(filters['facilityId']))) {
       params.facilityId = Number(filters['facilityId']);
     }
 
-    if (filters['productId']) {
+    if (filters['productId'] && !isNaN(Number(filters['productId']))) {
       params.productId = Number(filters['productId']);
     }
 
-    if (filters['purchaseStatus']) {
-      params.purchaseStatus = Number(filters['purchaseStatus']) as PurchaseStatusEnum;
+    if (filters['purchaseStatus'] && filters['purchaseStatus'] !== '') {
+      const statusValue = Number(filters['purchaseStatus']);
+      if (!isNaN(statusValue) && Object.values(PurchaseStatusEnum).includes(statusValue)) {
+        params.purchaseStatus = statusValue as PurchaseStatusEnum;
+      }
     }
+
 
     if (filters['dateRange'] && typeof filters['dateRange'] === 'object') {
       const dateRange = filters['dateRange'] as { startDate?: string; endDate?: string };
@@ -360,6 +380,7 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
 
     return params;
   }
+
 
   /**
    * Обработчики событий таблицы
@@ -385,9 +406,7 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
    * Обработчики поиска
    */
   onSearch(term: string): void {
-    this.searchTerm = term;
-    this.currentPage = 1;
-    this.loadPurchases();
+    this.searchSubject.next(term);
   }
 
   /**
@@ -406,7 +425,7 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
     this.filterValues = {};
     this.searchTerm = '';
     this.currentPage = 1;
-    
+
     // Триггерим сброс в дочерних компонентах
     this.resetFiltersTrigger = true;
     setTimeout(() => {
