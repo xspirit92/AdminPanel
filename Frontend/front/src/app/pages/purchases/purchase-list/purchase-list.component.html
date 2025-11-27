@@ -27,6 +27,7 @@
       <div class="flex gap-3 sm:justify-between">
         <app-search 
           [placeholder]="'Поиск...'"
+          [value]="searchTerm"
           (search)="onSearch($event)"
         />
         

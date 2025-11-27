@@ -333,6 +333,7 @@ export class PurchaseListComponent implements OnInit {
   }
 
   onSearch(term: string): void {
+    this.searchTerm = term;
     this.filterSettings.searchTerm = term;
     this.currentPage = 1;
     this.loadPurchases();
@@ -348,6 +349,7 @@ export class PurchaseListComponent implements OnInit {
     this.resetFiltersTrigger = true;
 
     this.filterValues = {};
+    this.searchTerm = '';
     this.filterSettings = {
       supplierId: undefined,
       facilityId: undefined,
@@ -355,7 +357,7 @@ export class PurchaseListComponent implements OnInit {
       purchaseStatus: undefined,
       startDate: undefined,
       endDate: undefined,
-      searchTerm: this.filterSettings.searchTerm
+      searchTerm: this.searchTerm
     };
 
     setTimeout(() => {

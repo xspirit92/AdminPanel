@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -18,18 +18,33 @@ import { FormsModule } from '@angular/forms';
         [placeholder]="placeholder"
         [(ngModel)]="searchValue"
         (keyup.enter)="onSearch()"
+        (input)="onInputChange()"
         class="shadow-sm focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent py-2.5 pr-4 pl-11 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-none sm:w-[300px] sm:min-w-[300px] dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" 
       />
     </div>
   `
 })
-export class SearchComponent {
+export class SearchComponent implements OnChanges {
   @Input() placeholder = 'Поиск...';
+  @Input() value = ''; // Добавляем Input для синхронизации значения
   @Output() search = new EventEmitter<string>();
 
   searchValue = '';
 
+  ngOnChanges(changes: SimpleChanges): void {
+    // Синхронизируем значение из родительского компонента
+    if (changes['value'] && changes['value'].currentValue !== this.searchValue) {
+      this.searchValue = changes['value'].currentValue;
+    }
+  }
+
   onSearch(): void {
+    this.search.emit(this.searchValue);
+  }
+
+  onInputChange(): void {
+    // Эмитим событие при каждом изменении input (опционально)
+    // Можно убрать, если нужно эмитить только по Enter
     this.search.emit(this.searchValue);
   }
 }
