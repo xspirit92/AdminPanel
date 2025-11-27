@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { PurchaseStatusLabels, PurchaseStatusEnum, } from '../../../core/models/purchase.models';
+import { PurchaseStatusLabels, PurchaseStatusEnum } from '../../../core/models/purchase.models';
 import { BadgeComponent } from '../../../shared/components/ui/badge/badge.component';
-import { TableDropdownComponent } from '../../../shared/components/common/table-dropdown/table-dropdown.component';
 import { PageBreadcrumbComponent } from '../../../shared/components/common/page-breadcrumb/page-breadcrumb.component';
 import { LabelComponent } from '../../../shared/components/form/label/label.component';
 import { DateRangePickerComponent } from '../../../shared/components/date-range-picker/date-range-picker.component';
@@ -12,6 +11,9 @@ import { SelectComponent } from '../../../shared/components/form/select/select.c
 import { ModalComponent } from '../../../shared/components/ui/modal/modal.component';
 import { ButtonComponent } from '../../../shared/components/ui/button/button.component';
 import { ApiPurchaseGetRequestParams, ApiPurchaseIdDeleteRequestParams, FacilityDto, FacilityService, ProductDto, ProductService, PurchaseDto, PurchaseService, SupplierDto, SupplierService } from '../../../api';
+import { BaseFiltersComponent, FilterField } from '../../../shared/components/base-filters/base-filters.component';
+import { BaseTableComponent, TableColumn } from '../../../shared/components/base-table/base-table.component';
+import { SearchComponent } from '../../../shared/components/search/search.component';
 
 interface SortConfig {
   key: string;
@@ -25,24 +27,126 @@ interface SortConfig {
     CommonModule,
     RouterModule,
     FormsModule,
-    BadgeComponent,
-    TableDropdownComponent,
     PageBreadcrumbComponent,
-    DateRangePickerComponent,
+    BaseFiltersComponent,
+    BaseTableComponent,
+    SearchComponent,
+    ModalComponent,
     LabelComponent,
     SelectComponent,
-    ModalComponent,
-    ButtonComponent
+    DateRangePickerComponent,
+    ButtonComponent,
+    BadgeComponent
   ],
   templateUrl: './purchase-list.component.html'
 })
 export class PurchaseListComponent implements OnInit {
+  // Table configuration
+  tableColumns: TableColumn[] = [
+    {
+      key: 'supplierName',
+      label: 'Поставщик',
+      sortable: true
+    },
+    {
+      key: 'productName',
+      label: 'Продукт',
+      sortable: true
+    },
+    {
+      key: 'facilityName',
+      label: 'Объект',
+      sortable: true
+    },
+    {
+      key: 'quantity',
+      label: 'Количество',
+      sortable: true,
+      type: 'text'
+    },
+    {
+      key: 'amount',
+      label: 'Сумма',
+      sortable: true,
+      type: 'currency'
+    },
+    {
+      key: 'purchaseStatus',
+      label: 'Статус',
+      sortable: true,
+      type: 'badge',
+      badgeColorMap: {
+        [PurchaseStatusEnum.Pending]: 'warning',
+        [PurchaseStatusEnum.Confirmed]: 'info',
+        [PurchaseStatusEnum.Completed]: 'success',
+        [PurchaseStatusEnum.Cancelled]: 'error'
+      },
+      format: (value: PurchaseStatusEnum) => PurchaseStatusLabels[value]
+    },
+    {
+      key: 'dateCreated',
+      label: 'Дата создания',
+      sortable: true,
+      type: 'date'
+    },
+    {
+      key: 'actions',
+      label: 'Действия',
+      type: 'actions',
+      width: '100px'
+    }
+  ];
+
+  // Filter configuration - инициализируем пустыми опциями
+  filterFields: FilterField[] = [
+    {
+      key: 'supplierId',
+      label: 'Поставщик',
+      type: 'select',
+      placeholder: 'Все поставщики',
+      options: []
+    },
+    {
+      key: 'facilityId',
+      label: 'Объект',
+      type: 'select',
+      placeholder: 'Все объекты',
+      options: []
+    },
+    {
+      key: 'productId',
+      label: 'Продукт',
+      type: 'select',
+      placeholder: 'Все продукты',
+      options: []
+    },
+    {
+      key: 'purchaseStatus',
+      label: 'Статус',
+      type: 'select',
+      placeholder: 'Все статусы',
+      options: []
+    },
+    {
+      key: 'dateRange',
+      label: 'Диапазон дат',
+      type: 'date-range',
+      placeholder: 'Выберите период'
+    }
+  ];
+
+  // Data
   purchases: PurchaseDto[] = [];
   loading = false;
   totalItems = 0;
   currentPage = 1;
   pageSize = 10;
   totalPages = 0;
+
+  // State
+  sortConfig = { key: 'dateCreated', asc: false };
+  filterValues: any = {};
+  searchTerm = '';
 
   // Модальное окно фильтров
   isFilterModalOpen = false;
@@ -51,23 +155,10 @@ export class PurchaseListComponent implements OnInit {
   isDeleteModalOpen = false;
   purchaseToDelete: PurchaseDto | null = null;
 
-  // Сортировка
-  sort: SortConfig = {
-    key: 'dateCreated',
-    asc: false
-  };
-
   // Данные для фильтров
   suppliers: SupplierDto[] = [];
   facilities: FacilityDto[] = [];
   products: ProductDto[] = [];
-
-  filter: ApiPurchaseGetRequestParams = {
-    pageNumber: 1,
-    pageSize: 10,
-    sortBy: 'dateCreated',
-    sortDescending: true
-  };
 
   // Фильтры из Swagger
   filterSettings = {
@@ -82,6 +173,52 @@ export class PurchaseListComponent implements OnInit {
 
   purchaseStatusLabels = PurchaseStatusLabels;
   purchaseStatusEnum = PurchaseStatusEnum;
+
+  constructor(
+    private purchaseService: PurchaseService,
+    private supplierService: SupplierService,
+    private facilityService: FacilityService,
+    private productService: ProductService,
+    private router: Router
+  ) { }
+
+  ngOnInit(): void {
+    this.loadFilterData();
+    this.loadPurchases();
+  }
+
+  // Загружаем данные для фильтров
+  loadFilterData(): void {
+    this.supplierService.apiSupplierListGet().subscribe({
+      next: (response) => {
+        this.suppliers = response.data || [];
+        this.updateFilterOptions();
+      },
+      error: (error) => {
+        console.error('Error loading suppliers:', error);
+      }
+    });
+
+    this.facilityService.apiFacilityListGet().subscribe({
+      next: (response) => {
+        this.facilities = response.data || [];
+        this.updateFilterOptions();
+      },
+      error: (error) => {
+        console.error('Error loading facilities:', error);
+      }
+    });
+
+    this.productService.apiProductListGet().subscribe({
+      next: (response) => {
+        this.products = response.data || [];
+        this.updateFilterOptions();
+      },
+      error: (error) => {
+        console.error('Error loading products:', error);
+      }
+    });
+  }
 
   // Опции для селекта статуса
   get statusOptions() {
@@ -99,8 +236,8 @@ export class PurchaseListComponent implements OnInit {
     return [
       { value: '', label: 'Все поставщики' },
       ...this.suppliers.map(supplier => ({
-        value: supplier.id.toString(),
-        label: supplier.name
+        value: supplier.id?.toString() || '',
+        label: supplier.name || ''
       }))
     ];
   }
@@ -110,8 +247,8 @@ export class PurchaseListComponent implements OnInit {
     return [
       { value: '', label: 'Все объекты' },
       ...this.facilities.map(facility => ({
-        value: facility.id.toString(),
-        label: facility.name
+        value: facility.id?.toString() || '',
+        label: facility.name || ''
       }))
     ];
   }
@@ -121,58 +258,25 @@ export class PurchaseListComponent implements OnInit {
     return [
       { value: '', label: 'Все продукты' },
       ...this.products.map(product => ({
-        value: product.id.toString(),
-        label: product.name
+        value: product.id?.toString() || '',
+        label: product.name || ''
       }))
     ];
   }
 
-  // Опции для количества элементов на странице
-  pageSizeOptions = [
-    { value: '10', label: '10' },
-    { value: '25', label: '25' },
-    { value: '50', label: '50' },
-    { value: '100', label: '100' }
-  ];
-
-  constructor(
-    private purchaseService: PurchaseService,
-    private supplierService: SupplierService,
-    private facilityService: FacilityService,
-    private productService: ProductService,
-  ) { }
-
-  ngOnInit(): void {
-    this.loadFilterData();
-    this.loadPurchases();
-  }
-
-  // Загружаем данные для фильтров
-  loadFilterData(): void {
-    this.supplierService.apiSupplierListGet().subscribe({
-      next: (response) => {
-        this.suppliers = response.data || [];
-      },
-      error: (error) => {
-        console.error('Error loading suppliers:', error);
-      }
-    });
-
-    this.facilityService.apiFacilityListGet().subscribe({
-      next: (response) => {
-        this.facilities = response.data || [];
-      },
-      error: (error) => {
-        console.error('Error loading facilities:', error);
-      }
-    });
-
-    this.productService.apiProductListGet().subscribe({
-      next: (response) => {
-        this.products = response.data || [];
-      },
-      error: (error) => {
-        console.error('Error loading products:', error);
+  updateFilterOptions(): void {
+    this.filterFields = this.filterFields.map(field => {
+      switch (field.key) {
+        case 'supplierId':
+          return { ...field, options: this.supplierOptions };
+        case 'facilityId':
+          return { ...field, options: this.facilityOptions };
+        case 'productId':
+          return { ...field, options: this.productOptions };
+        case 'purchaseStatus':
+          return { ...field, options: this.statusOptions };
+        default:
+          return field;
       }
     });
   }
@@ -182,16 +286,17 @@ export class PurchaseListComponent implements OnInit {
 
     // Применяем фильтры и сортировку
     const filterParams: ApiPurchaseGetRequestParams = {
-      ...this.filter,
+      pageNumber: this.currentPage,
+      pageSize: this.pageSize,
+      sortBy: this.sortConfig.key,
+      sortDescending: !this.sortConfig.asc,
       supplierId: this.filterSettings.supplierId,
       facilityId: this.filterSettings.facilityId,
       productId: this.filterSettings.productId,
       purchaseStatus: this.filterSettings.purchaseStatus,
       startDate: this.filterSettings.startDate,
       endDate: this.filterSettings.endDate,
-      searchTerm: this.filterSettings.searchTerm,
-      sortBy: this.sort.key,
-      sortDescending: !this.sort.asc
+      searchTerm: this.filterSettings.searchTerm
     };
 
     this.purchaseService.apiPurchaseGet(filterParams).subscribe({
@@ -209,76 +314,37 @@ export class PurchaseListComponent implements OnInit {
     });
   }
 
-  // Сортировка по колонке
-  sortBy(key: string): void {
-    if (this.sort.key === key) {
-      // Если уже сортируем по этой колонке, меняем направление
-      this.sort.asc = !this.sort.asc;
-    } else {
-      // Если новая колонка, устанавливаем сортировку по убыванию
-      this.sort.key = key;
-      this.sort.asc = false;
-    }
-
-    // Обновляем параметры сортировки в фильтре
-    this.filter.sortBy = this.sort.key;
-    this.filter.sortDescending = !this.sort.asc;
-
-    // Перезагружаем данные
+  onSortChange(sort: SortConfig): void {
+    this.sortConfig = sort;
+    this.currentPage = 1; // Сбрасываем на первую страницу при сортировке
     this.loadPurchases();
   }
 
-  // Получить класс для иконки сортировки
-  getSortIconClass(columnKey: string): string {
-    if (this.sort.key !== columnKey) {
-      return 'text-gray-300 dark:text-gray-400/50';
-    }
-    return this.sort.asc ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400';
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadPurchases();
   }
 
-  goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.filter.pageNumber = page;
-      this.currentPage = page;
-      this.loadPurchases();
-    }
-  }
-
-  onStatusChange(status: string): void {
-    this.filterSettings.purchaseStatus = status ? Number(status) : undefined;
-  }
-
-  onSupplierChange(supplierId: string): void {
-    this.filterSettings.supplierId = supplierId ? Number(supplierId) : undefined;
-  }
-
-  onFacilityChange(facilityId: string): void {
-    this.filterSettings.facilityId = facilityId ? Number(facilityId) : undefined;
-  }
-
-  onProductChange(productId: string): void {
-    this.filterSettings.productId = productId ? Number(productId) : undefined;
-  }
-
-  onPageSizeChange(size?: number): void {
-    this.filter.pageSize = size ?? 10;
-    this.filter.pageNumber = 1;
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
     this.currentPage = 1;
     this.loadPurchases();
   }
 
-  onSearch(): void {
-    this.applyFilters();
+  onSearch(term: string): void {
+    this.filterSettings.searchTerm = term;
+    this.currentPage = 1;
+    this.loadPurchases();
   }
 
   applyFilters(): void {
-    this.filter.pageNumber = 1;
     this.currentPage = 1;
     this.loadPurchases();
     this.closeFilterModal();
   }
 
   clearFilters(): void {
+    this.filterValues = {};
     this.filterSettings = {
       supplierId: undefined,
       facilityId: undefined,
@@ -286,9 +352,42 @@ export class PurchaseListComponent implements OnInit {
       purchaseStatus: undefined,
       startDate: undefined,
       endDate: undefined,
-      searchTerm: ''
+      searchTerm: this.filterSettings.searchTerm // сохраняем поисковый термин
     };
     this.applyFilters();
+  }
+
+  onEditPurchase(purchase: PurchaseDto): void {
+    this.router.navigate(['/purchases/edit', purchase.id]);
+  }
+
+  onDeletePurchase(purchase: PurchaseDto): void {
+    this.openDeleteModal(purchase);
+  }
+
+  onOpenFilterModal(): void {
+    this.isFilterModalOpen = true;
+  }
+
+  onCloseFilterModal(): void {
+    this.isFilterModalOpen = false;
+  }
+
+  onFilterChange(filters: any): void {
+    // Преобразуем фильтры в формат для API
+    this.filterSettings.supplierId = filters.supplierId ? Number(filters.supplierId) : undefined;
+    this.filterSettings.facilityId = filters.facilityId ? Number(filters.facilityId) : undefined;
+    this.filterSettings.productId = filters.productId ? Number(filters.productId) : undefined;
+    this.filterSettings.purchaseStatus = filters.purchaseStatus ? Number(filters.purchaseStatus) : undefined;
+
+    // Обрабатываем dateRange
+    if (filters.dateRange) {
+      this.filterSettings.startDate = filters.dateRange.startDate;
+      this.filterSettings.endDate = filters.dateRange.endDate;
+    } else {
+      this.filterSettings.startDate = undefined;
+      this.filterSettings.endDate = undefined;
+    }
   }
 
   get hasActiveFilters(): boolean {
@@ -321,6 +420,22 @@ export class PurchaseListComponent implements OnInit {
   closeDeleteModal(): void {
     this.isDeleteModalOpen = false;
     this.purchaseToDelete = null;
+  }
+
+  onStatusChange(status: string): void {
+    this.filterSettings.purchaseStatus = status ? Number(status) : undefined;
+  }
+
+  onProductChange(productId: string): void {
+    this.filterSettings.productId = productId ? Number(productId) : undefined;
+  }
+
+  onFacilityChange(facilityId: string): void {
+    this.filterSettings.facilityId = facilityId ? Number(facilityId) : undefined;
+  }
+
+  onSupplierChange(supplierId: string): void {
+    this.filterSettings.supplierId = supplierId ? Number(supplierId) : undefined;
   }
 
   confirmDelete(): void {

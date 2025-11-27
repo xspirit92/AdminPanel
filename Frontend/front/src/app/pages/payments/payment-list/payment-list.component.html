@@ -313,6 +313,13 @@
         <form class="flex flex-col">
             <div class="custom-scrollbar max-h-[60vh] overflow-y-auto px-2 pb-3">
                 <div class="space-y-6">
+                    <!-- Date Range Picker -->
+                    <div>
+                        <app-date-range-picker id="date-range" label="Диапазон дат" placeholder="Выберите период"
+                            [defaultStartDate]="filterSettings.startDate" [defaultEndDate]="filterSettings.endDate"
+                            (dateRangeChange)="onDateRangeChange($event)" />
+                    </div>
+
                     <!-- Purchase Filter -->
                     <div>
                         <app-label>Закупка</app-label>
@@ -339,13 +346,6 @@
                         <app-select [options]="statusOptions" [(ngModel)]="filterSettings.paymentStatus"
                             (ngModelChange)="onStatusChange($event)" name="status" placeholder="Все статусы">
                         </app-select>
-                    </div>
-
-                    <!-- Date Range Picker -->
-                    <div>
-                        <app-date-range-picker id="date-range" label="Диапазон дат" placeholder="Выберите период"
-                            [defaultStartDate]="filterSettings.startDate" [defaultEndDate]="filterSettings.endDate"
-                            (dateRangeChange)="onDateRangeChange($event)" />
                     </div>
                 </div>
             </div>

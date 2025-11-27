@@ -1,0 +1,85 @@
+<!-- shared/components/common/base-filters/base-filters.component.html -->
+<div class="relative">
+  <!-- Filter Button -->
+  <button
+    class="shadow-theme-xs relative flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 sm:w-auto sm:min-w-[100px] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400"
+    (click)="onOpenModal()"
+  >
+    <!-- Оранжевая точка для активных фильтров -->
+    <span class="absolute -right-1 -top-1 z-10 h-2.5 w-2.5 rounded-full bg-orange-400"
+      [class.hidden]="!hasActiveFilters"
+      [class.flex]="hasActiveFilters">
+      <span class="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+    </span>
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path
+        d="M14.6537 5.90414C14.6537 4.48433 13.5027 3.33331 12.0829 3.33331C10.6631 3.33331 9.51206 4.48433 9.51204 5.90415M14.6537 5.90414C14.6537 7.32398 13.5027 8.47498 12.0829 8.47498C10.6630 8.47498 9.51204 7.32398 9.51204 5.90415M14.6537 5.90414L17.7087 5.90411M9.51204 5.90415L2.29199 5.90411M5.34694 14.0958C5.34694 12.676 6.49794 11.525 7.91777 11.525C9.33761 11.525 10.4886 12.676 10.4886 14.0958M5.34694 14.0958C5.34694 15.5156 6.49794 16.6666 7.91778 16.6666C9.33761 16.6666 10.4886 15.5156 10.4886 14.0958M5.34694 14.0958L2.29199 14.0958M10.4886 14.0958L17.7087 14.0958"
+        stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    Фильтр
+  </button>
+
+  <!-- Filter Modal -->
+  <app-modal [isOpen]="isFilterModalOpen" (close)="onCloseModal()" className="max-w-[520px] m-4">
+    <div
+      class="no-scrollbar relative w-full max-w-[520px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+      <div class="px-2 pr-14">
+        <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+          Фильтры
+        </h4>
+        <p class="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+          Настройте параметры фильтрации для поиска нужных данных.
+        </p>
+      </div>
+      <form class="flex flex-col">
+        <div class="custom-scrollbar max-h-[60vh] overflow-y-auto px-2 pb-3">
+          <div class="space-y-6">
+            <!-- Dynamic Filters -->
+            <div *ngFor="let filter of filters">
+              <!-- Select Filter -->
+              <div *ngIf="filter.type === 'select'">
+                <app-label>{{ filter.label }}</app-label>
+                <app-select 
+                  [options]="filter.options || []" 
+                  [(ngModel)]="filterValues[filter.key]"
+                  (ngModelChange)="onFilterChange(filter.key, $event)" 
+                  [name]="filter.key" 
+                  [placeholder]="filter.placeholder || ''">
+                </app-select>
+              </div>
+
+              <!-- Date Range Filter -->
+              <div *ngIf="filter.type === 'date-range'">
+                <app-date-range-picker 
+                  [id]="filter.key" 
+                  [label]="filter.label" 
+                  [placeholder]="filter.placeholder || 'Выберите период'"
+                  [defaultStartDate]="filterValues[filter.key]?.startDate"
+                  [defaultEndDate]="filterValues[filter.key]?.endDate"
+                  (dateRangeChange)="onDateRangeChange(filter.key, $event)" />
+              </div>
+
+              <!-- Text Filter -->
+              <div *ngIf="filter.type === 'text'">
+                <app-label>{{ filter.label }}</app-label>
+                <input
+                  type="text"
+                  [placeholder]="filter.placeholder || ''"
+                  [(ngModel)]="filterValues[filter.key]"
+                  (ngModelChange)="onFilterChange(filter.key, $event)"
+                  [name]="filter.key"
+                  class="shadow-sm focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-white/90 dark:placeholder:text-white/30"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+          <app-button size="sm" variant="outline" (btnClick)="onClear()">Сбросить</app-button>
+          <app-button size="sm" (btnClick)="onApply()">Применить</app-button>
+        </div>
+      </form>
+    </div>
+  </app-modal>
+</div>
