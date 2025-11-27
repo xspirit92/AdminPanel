@@ -1,4 +1,13 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { 
+  Component, 
+  Input, 
+  Output, 
+  EventEmitter, 
+  OnInit, 
+  OnChanges, 
+  SimpleChanges,
+  ChangeDetectionStrategy
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BadgeComponent } from '../ui/badge/badge.component';
@@ -35,6 +44,20 @@ export interface TableActionEvent<T = any> {
   action: 'edit' | 'delete';
 }
 
+// Константы для конфигурации
+const DEFAULT_CURRENCY_CONFIG = {
+  style: 'currency' as const,
+  currency: 'RUB',
+  minimumFractionDigits: 0
+};
+
+const DEFAULT_PAGE_SIZE_OPTIONS: PageSizeOption[] = [
+  { value: '10', label: '10' },
+  { value: '25', label: '25' },
+  { value: '50', label: '50' },
+  { value: '100', label: '100' }
+];
+
 @Component({
   selector: 'app-base-table',
   standalone: true,
@@ -45,10 +68,11 @@ export interface TableActionEvent<T = any> {
     TableDropdownComponent,
     SelectComponent
   ],
-  templateUrl: './base-table.component.html'
+  templateUrl: './base-table.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush // ✅ Добавляем OnPush для производительности
 })
 export class BaseTableComponent<T = any> implements OnInit, OnChanges {
-  // Inputs
+  // Inputs с дефолтными значениями
   @Input() columns: TableColumn<T>[] = [];
   @Input() data: T[] = [];
   @Input() loading = false;
@@ -69,29 +93,29 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
   @Output() editItem = new EventEmitter<T>();
   @Output() deleteItem = new EventEmitter<T>();
 
-  // Конфигурация
-  readonly pageSizeOptions: PageSizeOption[] = [
-    { value: '10', label: '10' },
-    { value: '25', label: '25' },
-    { value: '50', label: '50' },
-    { value: '100', label: '100' }
-  ];
+  // Конфигурация (readonly для иммутабельности)
+  readonly pageSizeOptions: PageSizeOption[] = DEFAULT_PAGE_SIZE_OPTIONS;
 
   // Состояние
   selectedPageSize = '10';
-  private readonly defaultCurrencyConfig = {
-    style: 'currency',
-    currency: 'RUB',
-    minimumFractionDigits: 0
-  } as const;
+
+  // Кэш для вычисляемых значений
+  private _visiblePages: number[] = [];
+  private _visiblePagesDirty = true;
 
   ngOnInit(): void {
     this.initializePageSize();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    // Оптимизация: пересчитываем только при изменении зависимостей
     if (changes['pageSize']) {
       this.initializePageSize();
+    }
+
+    // Помечаем кэш как устаревший при изменении зависимостей
+    if (changes['currentPage'] || changes['totalPages']) {
+      this._visiblePagesDirty = true;
     }
   }
 
@@ -103,7 +127,7 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
 
     const newSort: SortConfig = {
       key: column.key as string,
-      asc: this.sortConfig.key === column.key ? !this.sortConfig.asc : false
+      asc: this.sortConfig.key === column.key ? !this.sortConfig.asc : true
     };
 
     this.sortChange.emit(newSort);
@@ -138,7 +162,7 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
     if (this.sortConfig.key !== columnKey) {
       return 'text-gray-300 dark:text-gray-400/50';
     }
-    return this.sortConfig.asc ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400';
+    return 'text-gray-500 dark:text-gray-400';
   }
 
   getAriaSort(column: TableColumn<T>): 'ascending' | 'descending' | 'none' | null {
@@ -162,7 +186,7 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
   }
 
   getBadgeColor(column: TableColumn<T>, value: any): BadgeColor {
-    return column.badgeColorMap?.[value] || 'error';
+    return column.badgeColorMap?.[value] || 'info'; // ✅ Меняем дефолтный цвет на 'info'
   }
 
   formatValue(column: TableColumn<T>, item: T): string {
@@ -194,16 +218,8 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
     return this.rowClass;
   }
 
-  getNestedValue(obj: any, path: string): any {
-    if (!obj || !path) return undefined;
-
-    return path.split('.').reduce((current, key) => {
-      return current && current[key] !== undefined ? current[key] : undefined;
-    }, obj);
-  }
-
   /**
-   * Геттеры для пагинации
+   * Оптимизированные геттеры с кэшированием
    */
   get startItem(): number {
     return this.totalItems === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
@@ -214,23 +230,11 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
   }
 
   get visiblePages(): number[] {
-    if (this.totalPages <= 1) return [1];
-
-    const pages: number[] = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
-
-    // Adjust if we're at the beginning
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    if (this._visiblePagesDirty) {
+      this._visiblePages = this.calculateVisiblePages();
+      this._visiblePagesDirty = false;
     }
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i);
-    }
-
-    return pages;
+    return this._visiblePages;
   }
 
   get hasPreviousPage(): boolean {
@@ -252,8 +256,28 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
     return page >= 1 && page <= this.totalPages;
   }
 
+  private calculateVisiblePages(): number[] {
+    if (this.totalPages <= 1) return [1];
+
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+
+    // Adjust if we're at the beginning
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }
+
   private formatByType(type: ColumnType | undefined, value: any): string {
-    if (value === null || value === undefined) return '—';
+    if (value === null || value === undefined || value === '') return '—';
 
     switch (type) {
       case 'currency':
@@ -269,7 +293,7 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
 
   private formatCurrency(value: number): string {
     try {
-      return new Intl.NumberFormat('ru-RU', this.defaultCurrencyConfig).format(value || 0);
+      return new Intl.NumberFormat('ru-RU', DEFAULT_CURRENCY_CONFIG).format(value || 0);
     } catch {
       return `${value}`;
     }
@@ -278,6 +302,12 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
   private formatDate(value: string | Date): string {
     try {
       const date = typeof value === 'string' ? new Date(value) : value;
+      
+      // ✅ Проверяем валидность даты
+      if (isNaN(date.getTime())) {
+        return 'Неверная дата';
+      }
+      
       return date.toLocaleDateString('ru-RU');
     } catch {
       return 'Неверная дата';
@@ -285,10 +315,19 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
   }
 
   private formatText(value: any): string {
-    if (value === null || value === undefined) return '—';
-
-    const stringValue = value.toString();
+    const stringValue = String(value).trim();
     return stringValue || '—';
+  }
+
+  /**
+   * Утилитарные методы
+   */
+  getNestedValue(obj: any, path: string): any {
+    if (!obj || !path) return undefined;
+
+    return path.split('.').reduce((current, key) => {
+      return current && current[key] !== undefined ? current[key] : undefined;
+    }, obj);
   }
 
   /**
@@ -299,9 +338,9 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
   }
 
   trackByItem(index: number, item: T): any {
-    // Если у элемента есть id, используем его для лучшей производительности
-    const id = (item as any).id;
-    return id !== undefined ? id : index;
+    // ✅ Более безопасный подход к trackBy
+    const anyItem = item as any;
+    return anyItem?.id ?? anyItem?.uuid ?? index;
   }
 
   /**
@@ -309,5 +348,13 @@ export class BaseTableComponent<T = any> implements OnInit, OnChanges {
    */
   getPaginationAriaLabel(page: number): string {
     return `Перейти на страницу ${page}`;
+  }
+
+  /**
+   * Метод для проверки, является ли колонка actions
+   * (удобно для шаблона)
+   */
+  isActionsColumn(column: TableColumn<T>): boolean {
+    return column.type === 'actions';
   }
 }
