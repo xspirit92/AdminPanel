@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "download-swagger": "powershell -Command \"Invoke-WebRequest -Uri 'https://localhost:7046/swagger/v1/swagger.json' -OutFile 'swagger.json'",
+    "generate-api": "openapi-generator-cli generate -i http://localhost:5186/swagger/v1/swagger.json -g typescript-angular -o src/app/api --additional-properties=ngVersion=16.0.0,useSingleRequestParameter=true,basePath=http://localhost:5186"
   },
   "private": true,
   "dependencies": {

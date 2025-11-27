@@ -2,16 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { PaymentService, PaymentFilter } from '../../../core/services/payment.service';
-import { CommonService } from '../../../core/services/common.service';
-import { 
-  PaymentDto, 
-  PaymentStatusLabels, 
-  PaymentStatusEnum,
-  PaymentMethodLabels,
-  PaymentMethodEnum,
-  PurchaseDto
-} from '../../../core/models/payment.models';
 import { BadgeComponent } from '../../../shared/components/ui/badge/badge.component';
 import { TableDropdownComponent } from '../../../shared/components/common/table-dropdown/table-dropdown.component';
 import { PageBreadcrumbComponent } from '../../../shared/components/common/page-breadcrumb/page-breadcrumb.component';
@@ -20,6 +10,8 @@ import { DateRangePickerComponent } from '../../../shared/components/date-range-
 import { SelectComponent } from '../../../shared/components/form/select/select.component';
 import { ModalComponent } from '../../../shared/components/ui/modal/modal.component';
 import { ButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { ApiPaymentGetRequestParams, ApiPaymentIdDeleteRequestParams, PaymentDto, PaymentMethodEnum, PaymentService, PaymentStatusEnum, PurchaseDto, PurchaseService } from '../../../api';
+import { PaymentMethodLabels, PaymentStatusLabels } from '../../../core/models/payment.models';
 
 interface SortConfig {
   key: string;
@@ -66,7 +58,7 @@ export class PaymentListComponent implements OnInit {
     asc: false
   };
 
-  filter: PaymentFilter = {
+  filter: ApiPaymentGetRequestParams = {
     pageNumber: 1,
     pageSize: 10,
     sortBy: 'dateCreated',
@@ -92,9 +84,9 @@ export class PaymentListComponent implements OnInit {
   get paymentMethodOptions() {
     return [
       { value: '', label: 'Все методы' },
-      { value: PaymentMethodEnum.Cash.toString(), label: PaymentMethodLabels[PaymentMethodEnum.Cash] },
-      { value: PaymentMethodEnum.BankTransfer.toString(), label: PaymentMethodLabels[PaymentMethodEnum.BankTransfer] },
-      { value: PaymentMethodEnum.Electronic.toString(), label: PaymentMethodLabels[PaymentMethodEnum.Electronic] }
+      { value: PaymentMethodEnum.NUMBER_1.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_1] },
+      { value: PaymentMethodEnum.NUMBER_2.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_2] },
+      { value: PaymentMethodEnum.NUMBER_3.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_3] }
     ];
   }
 
@@ -102,9 +94,9 @@ export class PaymentListComponent implements OnInit {
   get statusOptions() {
     return [
       { value: '', label: 'Все статусы' },
-      { value: PaymentStatusEnum.Pending.toString(), label: PaymentStatusLabels[PaymentStatusEnum.Pending] },
-      { value: PaymentStatusEnum.Completed.toString(), label: PaymentStatusLabels[PaymentStatusEnum.Completed] },
-      { value: PaymentStatusEnum.Failed.toString(), label: PaymentStatusLabels[PaymentStatusEnum.Failed] }
+      { value: PaymentStatusEnum.NUMBER_1.toString(), label: PaymentStatusLabels[PaymentStatusEnum.NUMBER_1] },
+      { value: PaymentStatusEnum.NUMBER_2.toString(), label: PaymentStatusLabels[PaymentStatusEnum.NUMBER_2] },
+      { value: PaymentStatusEnum.NUMBER_3.toString(), label: PaymentStatusLabels[PaymentStatusEnum.NUMBER_3] }
     ];
   }
 
@@ -129,7 +121,7 @@ export class PaymentListComponent implements OnInit {
 
   constructor(
     private paymentService: PaymentService,
-    private commonService: CommonService
+    private purchaseService: PurchaseService,
   ) { }
 
   ngOnInit(): void {
@@ -138,7 +130,7 @@ export class PaymentListComponent implements OnInit {
   }
 
   loadPurchases(): void {
-    this.commonService.getPurchases().subscribe({
+    this.purchaseService.apiPurchaseListGet().subscribe({
       next: (response) => {
         if (response.isSuccess && response.data) {
           this.purchases = response.data;
@@ -154,7 +146,7 @@ export class PaymentListComponent implements OnInit {
     this.loading = true;
 
     // Применяем фильтры и сортировку
-    const filterParams: PaymentFilter = {
+    const filterParams: ApiPaymentGetRequestParams = {
       ...this.filter,
       purchaseId: this.filterSettings.purchaseId,
       paymentMethod: this.filterSettings.paymentMethod,
@@ -166,12 +158,12 @@ export class PaymentListComponent implements OnInit {
       sortDescending: !this.sort.asc
     };
 
-    this.paymentService.getPayments(filterParams).subscribe({
+    this.paymentService.apiPaymentGet(filterParams).subscribe({
       next: (response) => {
         let data = response.data;
-        this.payments = data.items || [];
-        this.totalItems = data.totalCount;
-        this.totalPages = data.totalPages;
+        this.payments = data?.items || [];
+        this.totalItems = data?.totalCount ?? 0;
+        this.totalPages = data?.totalPages ?? 0;
         this.loading = false;
       },
       error: (error) => {
@@ -212,11 +204,11 @@ export class PaymentListComponent implements OnInit {
   }
 
   onStatusChange(status: string): void {
-    this.filterSettings.paymentStatus = status ? Number(status) : undefined;
+    this.filterSettings.paymentStatus = status ? (Number(status) as PaymentStatusEnum) : undefined;
   }
 
   onPaymentMethodChange(method: string): void {
-    this.filterSettings.paymentMethod = method ? Number(method) : undefined;
+    this.filterSettings.paymentMethod = method ? (Number(method) as PaymentMethodEnum) : undefined;
   }
 
   onPurchaseChange(purchaseId: string): void {
@@ -286,7 +278,10 @@ export class PaymentListComponent implements OnInit {
 
   confirmDelete(): void {
     if (this.paymentToDelete) {
-      this.paymentService.deletePayment(this.paymentToDelete.id).subscribe({
+      const request: ApiPaymentIdDeleteRequestParams = {
+        id: this.paymentToDelete.id
+      };
+      this.paymentService.apiPaymentIdDelete(request).subscribe({
         next: () => {
           this.loadPayments();
           this.closeDeleteModal();
@@ -301,11 +296,11 @@ export class PaymentListComponent implements OnInit {
 
   getStatusBadgeColor(status: PaymentStatusEnum): 'success' | 'error' | 'warning' | 'info' {
     switch (status) {
-      case PaymentStatusEnum.Pending:
+      case PaymentStatusEnum.NUMBER_1:
         return 'warning';
-      case PaymentStatusEnum.Completed:
+      case PaymentStatusEnum.NUMBER_2:
         return 'success';
-      case PaymentStatusEnum.Failed:
+      case PaymentStatusEnum.NUMBER_3:
         return 'error';
       default:
         return 'warning';
@@ -314,11 +309,11 @@ export class PaymentListComponent implements OnInit {
 
   getMethodBadgeColor(method: PaymentMethodEnum): 'success' | 'error' | 'warning' | 'info' {
     switch (method) {
-      case PaymentMethodEnum.Cash:
+      case PaymentMethodEnum.NUMBER_1:
         return 'info';
-      case PaymentMethodEnum.BankTransfer:
+      case PaymentMethodEnum.NUMBER_2:
         return 'success';
-      case PaymentMethodEnum.Electronic:
+      case PaymentMethodEnum.NUMBER_3:
         return 'warning';
       default:
         return 'info';

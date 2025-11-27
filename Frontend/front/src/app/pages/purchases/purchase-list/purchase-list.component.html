@@ -238,12 +238,12 @@
                             {{ formatCurrency(purchase.amount) }}
                         </td>
                         <td class="px-5 py-4 text-gray-700 text-sm dark:text-gray-400">
-                            <app-badge size="sm" [color]="getBadgeColor(purchase.purchaseStatus)">
-                                {{ purchaseStatusLabels[purchase.purchaseStatus] }}
+                            <app-badge size="sm" [color]="getBadgeColor(purchase.purchaseStatus!)">
+                                {{ purchaseStatusLabels[purchase.purchaseStatus!] }}
                             </app-badge>
                         </td>
                         <td class="px-5 py-4 text-gray-700 text-sm dark:text-gray-400">
-                            {{ formatDate(purchase.dateCreated) }}
+                            {{ formatDate(purchase.dateCreated!) }}
                         </td>
                         <td class="px-5 py-4 text-gray-700 text-sm dark:text-gray-400">
                             <div class="relative inline-block">
@@ -448,8 +448,8 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Статус:</span>
-                        <app-badge size="sm" [color]="getBadgeColor(purchaseToDelete.purchaseStatus)">
-                            {{ purchaseStatusLabels[purchaseToDelete.purchaseStatus] }}
+                        <app-badge size="sm" [color]="getBadgeColor(purchaseToDelete.purchaseStatus!)">
+                            {{ purchaseStatusLabels[purchaseToDelete.purchaseStatus!] }}
                         </app-badge>
                     </div>
                 </div>

@@ -17,9 +17,9 @@ namespace CubArt.Application.Common.Mapping
         public MappingProfile()
         {
             CreateMap<Purchase, PurchaseDto>()
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => $"{src.Product.Name} от {src.DateCreated.ToString("dd.MM.yyyy")}"));
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => $"{src.Product.Name} от {src.DateCreated.ToString("dd.MM.yyyy")} - {src.Supplier.Name} ({src.Amount} руб.)"));
             CreateMap<Payment, PaymentDto>()
-                .ForMember(dest => dest.PurchaseName, opt => opt.MapFrom(src => $"{src.Purchase.Product.Name} от {src.Purchase.DateCreated.ToString("dd.MM.yyyy")}"));
+                .ForMember(dest => dest.PurchaseName, opt => opt.MapFrom(src => $"{src.Purchase.Product.Name} от {src.Purchase.DateCreated.ToString("dd.MM.yyyy")} - {src.Purchase.Supplier.Name} ({src.Purchase.Amount} руб.)"));
             CreateMap<Supply, SupplyDto>();
             CreateMap<Supplier, SupplierDto>();
             CreateMap<Facility, FacilityDto>();

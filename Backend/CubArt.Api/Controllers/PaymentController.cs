@@ -21,9 +21,9 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedListDto<PaymentDto>), 200)]
+        [ProducesResponseType(typeof(Result<PagedListDto<PaymentDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
-        public async Task<IActionResult> GetPayments([FromQuery] GetAllPaymentsQuery query, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetPayments([FromQuery] GetPaymentPagedListQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
 
@@ -34,7 +34,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [ProducesResponseType(typeof(PaymentDto), 200)]
+        [ProducesResponseType(typeof(Result<PaymentDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetPaymentById(Guid id, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(PaymentDto), 200)]
+        [ProducesResponseType(typeof(Result<PaymentDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> CreateOrUpdatePayment([FromBody] CreateOrUpdatePaymentCommand command, CancellationToken cancellationToken)
         {
@@ -61,7 +61,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [ProducesResponseType(typeof(PaymentDto), 200)]
+        [ProducesResponseType(typeof(Result<PaymentDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> DeletePaymentById(Guid id, CancellationToken cancellationToken)

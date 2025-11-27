@@ -1,4 +1,5 @@
-﻿using CubArt.Application.Users.Commands;
+﻿using CubArt.Application.Common.Models;
+using CubArt.Application.Users.Commands;
 using CubArt.Application.Users.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -17,7 +18,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpPost("login")]
-        [ProducesResponseType(typeof(LoginDto), 200)]
+        [ProducesResponseType(typeof(Result<LoginDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> Login([FromBody] LoginCommand request, CancellationToken cancellationToken)
         {

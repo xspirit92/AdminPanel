@@ -18,7 +18,13 @@ namespace CubArt.Application.Facilities.Handlers
 
         private readonly Dictionary<string, Func<IQueryable<Purchase>, IQueryable<Purchase>>> _sortMap = new()
         {
-            ["name"] = q => q.OrderBy(p => p.Product.Name)
+            ["amount"] = q => q.OrderBy(p => p.Amount),
+            ["quantity"] = q => q.OrderBy(p => p.Quantity),
+            ["datecreated"] = q => q.OrderBy(p => p.DateCreated),
+            ["purchasestatus"] = q => q.OrderBy(p => p.PurchaseStatus),
+            ["suppliername"] = q => q.OrderBy(p => p.Supplier.Name),
+            ["facilityname"] = q => q.OrderBy(p => p.Facility.Name),
+            ["productname"] = q => q.OrderBy(p => p.Product.Name)
         };
 
 

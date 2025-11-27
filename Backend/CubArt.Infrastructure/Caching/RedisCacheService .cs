@@ -1,5 +1,6 @@
 ﻿using StackExchange.Redis;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace CubArt.Infrastructure.Caching
 {
@@ -16,11 +17,19 @@ namespace CubArt.Infrastructure.Caching
     {
         private readonly IConnectionMultiplexer _redis;
         private readonly IDatabase _database;
+        private readonly JsonSerializerOptions _jsonOptions;
 
         public RedisCacheService(IConnectionMultiplexer redis)
         {
             _redis = redis;
             _database = redis.GetDatabase();
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
         }
 
         public async Task<T?> GetAsync<T>(string key)
@@ -28,12 +37,12 @@ namespace CubArt.Infrastructure.Caching
             var value = await _database.StringGetAsync(key);
             if (!value.HasValue) return default;
 
-            return JsonSerializer.Deserialize<T>(value.ToString());
+            return JsonSerializer.Deserialize<T>(value.ToString(), _jsonOptions);
         }
 
         public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null)
         {
-            var serializedValue = JsonSerializer.Serialize(value);
+            var serializedValue = JsonSerializer.Serialize(value, _jsonOptions);
             await _database.StringSetAsync(key, serializedValue, expiry);
         }
 

@@ -1,5 +1,9 @@
 ﻿using CubArt.Application.Common.Models;
+using CubArt.Application.Payments.Commands;
+using CubArt.Application.Productions.Commands;
 using CubArt.Application.Products.Commands;
+using CubArt.Application.Purchases.Commands;
+using CubArt.Application.Supplies.Commands;
 using CubArt.Infrastructure.Caching;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -53,7 +57,51 @@ namespace CubArt.Application.Common.Behaviors
                         {
                             await _cache.RemoveAsync(CacheKeys.Product(command.Id.Value));
                         }
-                        await _cache.RemoveByPatternAsync("products:*");
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.ProductPattern}:*");
+                        break;
+                    case CreateOrUpdatePurchaseCommand command:
+                        if (command.Id.HasValue)
+                        {
+                            await _cache.RemoveAsync(CacheKeys.Purchase(command.Id.Value));
+                        }
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.PurchasePattern}:*");
+                        break;
+                    case DeletePurchaseByIdCommand command:
+                        await _cache.RemoveAsync(CacheKeys.Purchase(command.Id));
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.PurchasePattern}:*");
+                        break;
+                    case CreateOrUpdatePaymentCommand command:
+                        if (command.Id.HasValue)
+                        {
+                            await _cache.RemoveAsync(CacheKeys.Payment(command.Id.Value));
+                        }
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.PaymentPattern}:*");
+                        break;
+                    case DeletePaymentByIdCommand command:
+                        await _cache.RemoveAsync(CacheKeys.Payment(command.Id));
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.PaymentPattern}:*");
+                        break;
+                    case CreateOrUpdateSupplyCommand command:
+                        if (command.Id.HasValue)
+                        {
+                            await _cache.RemoveAsync(CacheKeys.Supply(command.Id.Value));
+                        }
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.SupplyPattern}:*");
+                        break;
+                    case DeleteSupplyByIdCommand command:
+                        await _cache.RemoveAsync(CacheKeys.Supply(command.Id));
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.SupplyPattern}:*");
+                        break;
+                    case CreateOrUpdateProductionCommand command:
+                        if (command.Id.HasValue)
+                        {
+                            await _cache.RemoveAsync(CacheKeys.Production(command.Id.Value));
+                        }
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.ProductionPattern}:*");
+                        break;
+                    case DeleteProductionByIdCommand command:
+                        await _cache.RemoveAsync(CacheKeys.Production(command.Id));
+                        await _cache.RemoveByPatternAsync($"{CacheKeys.ProductionPattern}:*");
                         break;
                 }
 

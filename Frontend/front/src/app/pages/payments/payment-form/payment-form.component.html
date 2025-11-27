@@ -1,0 +1,98 @@
+<app-page-breadcrumb 
+  [pageTitle]="pageTitle"
+  [breadcrumbs]="[
+    { label: 'Оплаты', routerLink: '/payments' },
+    { label: isEditMode ? 'Редактирование' : 'Создание' }
+  ]"
+/>
+
+<div class="space-y-6">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-8">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto dark:border-white"></div>
+    <p class="mt-2 text-gray-600 dark:text-gray-400">Загрузка данных...</p>
+  </div>
+
+  <!-- Payment Form -->
+  <div *ngIf="!isLoading" class="space-y-6">
+    <!-- Payment Details Section -->
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+      <div class="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+        <h2 class="text-lg font-medium text-gray-800 dark:text-white">
+          Детали оплаты
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" *ngIf="isEditMode && currentPayment">
+          ID: {{ currentPayment.id }}
+        </p>
+      </div>
+      <div class="p-4 sm:p-6 dark:border-gray-800">
+        <form [formGroup]="paymentForm">
+          <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <!-- Purchase -->
+            <div class="col-span-full">
+              <app-label for="purchase">Закупка *</app-label>
+              <app-select
+                id="purchase"
+                formControlName="purchaseId"
+                [options]="purchaseOptions"
+                placeholder="Выберите закупку"
+              ></app-select>
+              <div *ngIf="purchaseId?.invalid && purchaseId?.touched" class="text-red-500 text-sm mt-1">
+                Выберите закупку
+              </div>
+            </div>
+
+            <!-- Amount -->
+            <div>
+              <app-label for="amount">Сумма оплаты (руб.) *</app-label>
+              <app-input-field
+                id="amount"
+                type="number"
+                formControlName="amount"
+                placeholder="0.00"
+                [step]="0.01"
+                [class]="amount?.invalid && amount?.touched ? 'border-red-500' : ''"
+              ></app-input-field>
+              <div *ngIf="amount?.invalid && amount?.touched" class="text-red-500 text-sm mt-1">
+                <div *ngIf="amount?.errors?.['required']">Введите сумму</div>
+                <div *ngIf="amount?.errors?.['min']">Сумма должна быть больше 0</div>
+              </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div>
+              <app-label for="paymentMethod">Метод оплаты *</app-label>
+              <app-select
+                id="paymentMethod"
+                formControlName="paymentMethod"
+                [options]="paymentMethodOptions"
+                placeholder="Выберите метод оплаты"
+              ></app-select>
+              <div *ngIf="paymentMethod?.invalid && paymentMethod?.touched" class="text-red-500 text-sm mt-1">
+                Выберите метод оплаты
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+      <app-button 
+        variant="outline" 
+        (btnClick)="onCancel()"
+        [disabled]="isSubmitting"
+      >
+        Отмена
+      </app-button>
+      <app-button 
+        variant="primary" 
+        (btnClick)="onSubmit()"
+        [disabled]="paymentForm.invalid || isSubmitting"
+      >
+        {{ submitButtonText }}
+      </app-button>
+    </div>
+  </div>
+</div>

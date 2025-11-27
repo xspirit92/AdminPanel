@@ -3,6 +3,7 @@ using CubArt.Application;
 using CubArt.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,14 +69,34 @@ app.UseCors("AllowAngularApp");
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
+    app.UseSwagger(c =>
+    {
+        c.PreSerializeFilters.Add((swagger, httpReq) =>
+        {
+            swagger.Servers = new List<OpenApiServer>
+        {
+            new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host.Value}" }
+        };
+        });
+    });
+
     app.UseSwaggerUI();
 }
 
 // В Production только спецификация без UI
 if (app.Environment.IsProduction())
 {
-    app.UseSwagger();
+    app.UseSwagger(c =>
+    {
+        c.PreSerializeFilters.Add((swagger, httpReq) =>
+        {
+            swagger.Servers = new List<OpenApiServer>
+        {
+            new OpenApiServer { Url = $"{httpReq.Scheme}://{httpReq.Host.Value}" }
+        };
+        });
+    });
+
 }
 
 
@@ -83,7 +104,10 @@ if (app.Environment.IsProduction())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
-app.UseHttpsRedirection();
+if (app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

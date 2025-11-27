@@ -23,9 +23,9 @@ namespace CubArt.Api.Controllers
 
         [HttpGet]
         [RequirePermission(PermissionEnum.StockRead)]
-        [ProducesResponseType(typeof(PagedListDto<StockBalanceViewDto>), 200)]
+        [ProducesResponseType(typeof(Result<PagedListDto<StockBalanceViewDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
-        public async Task<IActionResult> GetStockBalanceViews([FromQuery] GetAllStockBalanceViewsQuery query, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetStockBalanceViews([FromQuery] GetStockBalanceViewPagedListQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
 

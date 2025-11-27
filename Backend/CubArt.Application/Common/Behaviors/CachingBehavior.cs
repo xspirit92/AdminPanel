@@ -1,9 +1,15 @@
 ﻿using CubArt.Application.Common.Models;
+using CubArt.Application.Facilities.Queries;
+using CubArt.Application.Payments.Queries;
+using CubArt.Application.Productions.Queries;
 using CubArt.Application.Products.Queries;
+using CubArt.Application.Purchases.Commands;
+using CubArt.Application.Purchases.Queries;
+using CubArt.Application.Suppliers.Queries;
+using CubArt.Application.Supplies.Queries;
 using CubArt.Infrastructure.Caching;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System.Text.Json;
 
 namespace CubArt.Application.Common.Behaviors
@@ -75,7 +81,25 @@ namespace CubArt.Application.Common.Behaviors
             return request switch
             {
                 GetProductByIdQuery query => CacheKeys.Product(query.Id),
-                GetAllProductsQuery query => CacheKeys.ProductsList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+                GetProductListQuery query => CacheKeys.ProductList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+                GetProductPagedListQuery query => CacheKeys.ProductsPagedList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+
+                GetSupplierListQuery query => CacheKeys.SupplierList,
+                GetFacilityListQuery query => CacheKeys.FacilityList,
+
+                GetPurchaseByIdQuery query => CacheKeys.Purchase(query.Id),
+                GetPurchaseListQuery query => CacheKeys.PurchaseList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+                GetPurchasePagedListQuery query => CacheKeys.PurchasePagedList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+
+                GetPaymentByIdQuery query => CacheKeys.Payment(query.Id),
+                GetPaymentPagedListQuery query => CacheKeys.PaymentPagedList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+
+                GetSupplyByIdQuery query => CacheKeys.Supply(query.Id),
+                GetSupplyPagedListQuery query => CacheKeys.SupplyPagedList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+
+                GetProductionByIdQuery query => CacheKeys.Production(query.Id),
+                GetProductionPagedListQuery query => CacheKeys.ProductionPagedList(GetJsonStingValues(JsonSerializer.Serialize(query))),
+
                 _ => string.Empty
             };
         }
@@ -84,7 +108,7 @@ namespace CubArt.Application.Common.Behaviors
             return request switch
             {
                 GetProductByIdQuery => CacheSettings.ProductDetails,
-                GetAllProductsQuery => CacheSettings.ProductList,
+                GetProductPagedListQuery => CacheSettings.ProductList,
                 _ => CacheSettings.Default
             };
         }

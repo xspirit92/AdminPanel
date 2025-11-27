@@ -8,7 +8,7 @@ namespace CubArt.Application.Purchases.Queries
     {
         public string? Name { get; set; }
 
-        protected override string DefaultSortBy => "name";
+        protected override string DefaultSortBy => "datecreated";
 
     }
 }

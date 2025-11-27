@@ -23,9 +23,9 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedListDto<PurchaseDto>), 200)]
+        [ProducesResponseType(typeof(Result<PagedListDto<PurchaseDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
-        public async Task<IActionResult> GetPurchases([FromQuery] GetAllPurchasesQuery query, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetPurchases([FromQuery] GetPurchasePagedListQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
 
@@ -36,7 +36,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("list")]
-        [ProducesResponseType(typeof(List<PurchaseDto>), 200)]
+        [ProducesResponseType(typeof(Result<List<PurchaseDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetPurchaseList([FromQuery] GetPurchaseListQuery query, CancellationToken cancellationToken)
         {
@@ -49,7 +49,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [ProducesResponseType(typeof(PurchaseDto), 200)]
+        [ProducesResponseType(typeof(Result<PurchaseDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetPurchaseById(Guid id, CancellationToken cancellationToken)
@@ -63,7 +63,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(PurchaseDto), 200)]
+        [ProducesResponseType(typeof(Result<PurchaseDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> CreateOrUpdatePurchase([FromBody] CreateOrUpdatePurchaseCommand command, CancellationToken cancellationToken)
         {
@@ -76,7 +76,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [ProducesResponseType(typeof(PurchaseDto), 200)]
+        [ProducesResponseType(typeof(Result<PurchaseDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> DeletePurchaseById(Guid id, CancellationToken cancellationToken)

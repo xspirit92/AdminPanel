@@ -6,19 +6,9 @@ import { LabelComponent } from '../../../shared/components/form/label/label.comp
 import { InputFieldComponent } from '../../../shared/components/form/input/input-field.component';
 import { SelectComponent } from '../../../shared/components/form/select/select.component';
 import { ButtonComponent } from '../../../shared/components/ui/button/button.component';
-import { 
-  CreateOrUpdatePurchaseCommand, 
-  FacilityDto, 
-  ProductDto, 
-  ProductTypeEnum, 
-  SupplierDto, 
-  UnitOfMeasureEnum,
-  PurchaseDto 
-} from '../../../core/models/purchase.models';
-import { CommonService } from '../../../core/services/common.service';
-import { PurchaseService } from '../../../core/services/purchase.service';
 import { PageBreadcrumbComponent } from "../../../shared/components/common/page-breadcrumb/page-breadcrumb.component";
 import { NotificationService } from '../../../shared/services/notification.service';
+import { ApiPurchaseIdGetRequestParams, ApiPurchasePostRequestParams, CreateOrUpdatePurchaseCommand, FacilityDto, FacilityService, ProductDto, ProductService, PurchaseDto, PurchaseService, SupplierDto, SupplierService, UnitOfMeasureEnum } from '../../../api';
 
 @Component({
   selector: 'app-purchase-form',
@@ -51,8 +41,10 @@ export class PurchaseFormComponent implements OnInit {
     private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private commonService: CommonService,
     private purchaseService: PurchaseService,
+    private supplierService: SupplierService,
+    private facilityService: FacilityService,
+    private productService: ProductService,
     private notificationService: NotificationService
   ) {
     this.purchaseForm = this.createForm();
@@ -83,9 +75,9 @@ export class PurchaseFormComponent implements OnInit {
     this.isLoading = true;
 
     Promise.all([
-      this.commonService.getSuppliers().toPromise(),
-      this.commonService.getFacilities().toPromise(),
-      this.commonService.getProducts().toPromise()
+      this.supplierService.apiSupplierListGet().toPromise(),
+      this.facilityService.apiFacilityListGet().toPromise(),
+      this.productService.apiProductListGet().toPromise()
     ]).then(([suppliers, facilities, products]) => {
       this.suppliers = suppliers?.data || [];
       this.facilities = facilities?.data || [];
@@ -107,7 +99,10 @@ export class PurchaseFormComponent implements OnInit {
     if (!this.purchaseId) return;
 
     this.isLoading = true;
-    this.purchaseService.getPurchaseById(this.purchaseId).subscribe({
+    const request: ApiPurchaseIdGetRequestParams = {
+      id: this.purchaseId
+    };
+    this.purchaseService.apiPurchaseIdGet(request).subscribe({
       next: (response) => {
         if (response.isSuccess && response.data) {
           this.currentPurchase = response.data;
@@ -173,12 +168,12 @@ export class PurchaseFormComponent implements OnInit {
 
   getUnitOfMeasureLabel(unit: UnitOfMeasureEnum): string {
     const unitLabels = {
-      [UnitOfMeasureEnum.Piece]: 'шт',
-      [UnitOfMeasureEnum.Kilogram]: 'кг',
-      [UnitOfMeasureEnum.LinearMeter]: 'п.м',
-      [UnitOfMeasureEnum.Meter]: 'м',
-      [UnitOfMeasureEnum.SquareMeter]: 'м²',
-      [UnitOfMeasureEnum.CubicMeter]: 'м³'
+      [UnitOfMeasureEnum.NUMBER_1]: 'шт',
+      [UnitOfMeasureEnum.NUMBER_2]: 'кг',
+      [UnitOfMeasureEnum.NUMBER_3]: 'п.м',
+      [UnitOfMeasureEnum.NUMBER_4]: 'м',
+      [UnitOfMeasureEnum.NUMBER_5]: 'м²',
+      [UnitOfMeasureEnum.NUMBER_6]: 'м³'
     };
     return unitLabels[unit] || '';
   }
@@ -209,22 +204,22 @@ export class PurchaseFormComponent implements OnInit {
     this.isSubmitting = true;
 
     const formValue = this.purchaseForm.value;
-    const command: CreateOrUpdatePurchaseCommand = {
-      supplierId: parseInt(formValue.supplierId),
-      facilityId: parseInt(formValue.facilityId),
-      productId: parseInt(formValue.productId),
-      quantity: formValue.quantity,
-      amount: formValue.amount
+    const command: ApiPurchasePostRequestParams = {
+      createOrUpdatePurchaseCommand: {
+        supplierId: parseInt(formValue.supplierId),
+        facilityId: parseInt(formValue.facilityId),
+        productId: parseInt(formValue.productId),
+        quantity: formValue.quantity,
+        amount: formValue.amount
+      }
     };
 
     // Добавляем ID для редактирования
     if (this.isEditMode && this.purchaseId) {
-      command.id = this.purchaseId;
+      command.createOrUpdatePurchaseCommand!.id = this.purchaseId;
     }
 
-    const request = this.isEditMode 
-      ? this.purchaseService.updatePurchase(command)
-      : this.purchaseService.createPurchase(command);
+    const request = this.purchaseService.apiPurchasePost(command);
 
     request.subscribe({
       next: (response) => {

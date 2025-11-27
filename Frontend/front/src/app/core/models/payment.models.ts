@@ -1,3 +1,5 @@
+import { PaymentMethodEnum, PaymentStatusEnum } from "../../api";
+
 export interface PaymentDto {
   id: string;
   purchaseId: string;
@@ -27,28 +29,16 @@ export interface CreateOrUpdatePaymentCommand {
   paymentMethod: PaymentMethodEnum;
 }
 
-export enum PaymentMethodEnum {
-  Cash = 1,
-  BankTransfer = 2,
-  Electronic = 3
-}
-
-export enum PaymentStatusEnum {
-  Pending = 1,
-  Completed = 2,
-  Failed = 3
-}
-
 export const PaymentMethodLabels = {
-  [PaymentMethodEnum.Cash]: 'Наличные',
-  [PaymentMethodEnum.BankTransfer]: 'Банковский перевод',
-  [PaymentMethodEnum.Electronic]: 'Электронный платеж'
+  [PaymentMethodEnum.NUMBER_1]: 'Наличные',
+  [PaymentMethodEnum.NUMBER_2]: 'Банковский перевод',
+  [PaymentMethodEnum.NUMBER_3]: 'Электронный платеж'
 };
 
 export const PaymentStatusLabels = {
-  [PaymentStatusEnum.Pending]: 'В ожидании',
-  [PaymentStatusEnum.Completed]: 'Завершена',
-  [PaymentStatusEnum.Failed]: 'Ошибка'
+  [PaymentStatusEnum.NUMBER_1]: 'В ожидании',
+  [PaymentStatusEnum.NUMBER_2]: 'Завершена',
+  [PaymentStatusEnum.NUMBER_3]: 'Ошибка'
 };
 
 export interface Result<T> {

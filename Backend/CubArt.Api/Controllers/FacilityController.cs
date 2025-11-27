@@ -1,4 +1,5 @@
-﻿using CubArt.Application.Facilities.DTOs;
+﻿using CubArt.Application.Common.Models;
+using CubArt.Application.Facilities.DTOs;
 using CubArt.Application.Facilities.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("list")]
-        [ProducesResponseType(typeof(List<FacilityDto>), 200)]
+        [ProducesResponseType(typeof(Result<List<FacilityDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetFacilityList([FromQuery] GetFacilityListQuery query, CancellationToken cancellationToken)
         {

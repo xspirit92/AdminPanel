@@ -1,4 +1,5 @@
-﻿using CubArt.Application.Suppliers.DTOs;
+﻿using CubArt.Application.Common.Models;
+using CubArt.Application.Suppliers.DTOs;
 using CubArt.Application.Suppliers.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +19,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("list")]
-        [ProducesResponseType(typeof(List<SupplierDto>), 200)]
+        [ProducesResponseType(typeof(Result<List<SupplierDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetSupplierList([FromQuery] GetSupplierListQuery query, CancellationToken cancellationToken)
         {

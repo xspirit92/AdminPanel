@@ -21,9 +21,9 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedListDto<ProductDto>), 200)]
+        [ProducesResponseType(typeof(Result<PagedListDto<ProductDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
-        public async Task<IActionResult> GetProducts([FromQuery] GetAllProductsQuery query, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetProducts([FromQuery] GetProductPagedListQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
 
@@ -34,7 +34,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("list")]
-        [ProducesResponseType(typeof(List<ProductDto>), 200)]
+        [ProducesResponseType(typeof(Result<List<ProductDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetProductList([FromQuery] GetProductListQuery query, CancellationToken cancellationToken)
         {
@@ -47,7 +47,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("{id:int}")]
-        [ProducesResponseType(typeof(ProductDto), 200)]
+        [ProducesResponseType(typeof(Result<ProductDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetProductById(int id, CancellationToken cancellationToken)
@@ -61,7 +61,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(ProductDto), 200)]
+        [ProducesResponseType(typeof(Result<ProductDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> CreateOrUpdateProduct([FromBody] CreateOrUpdateProductCommand command, CancellationToken cancellationToken)
         {

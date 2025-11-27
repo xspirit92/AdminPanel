@@ -20,7 +20,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpPost("create-user")]
-        [ProducesResponseType(typeof(UserDto), 200)]
+        [ProducesResponseType(typeof(Result<UserDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserCommand request, CancellationToken cancellationToken)
         {

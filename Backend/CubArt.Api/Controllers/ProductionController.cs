@@ -21,9 +21,9 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedListDto<ProductionDto>), 200)]
+        [ProducesResponseType(typeof(Result<PagedListDto<ProductionDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
-        public async Task<IActionResult> GetProductions([FromQuery] GetAllProductionsQuery query, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetProductions([FromQuery] GetProductionPagedListQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
 
@@ -34,7 +34,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [ProducesResponseType(typeof(ProductionDto), 200)]
+        [ProducesResponseType(typeof(Result<ProductionDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetProductionById(Guid id, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(ProductionDto), 200)]
+        [ProducesResponseType(typeof(Result<ProductionDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> CreateOrUpdateProduction([FromBody] CreateOrUpdateProductionCommand command, CancellationToken cancellationToken)
         {
@@ -61,7 +61,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [ProducesResponseType(typeof(ProductionDto), 200)]
+        [ProducesResponseType(typeof(Result<ProductionDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> DeleteProductionById(Guid id, CancellationToken cancellationToken)

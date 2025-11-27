@@ -2,9 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { PurchaseService, PurchaseFilter } from '../../../core/services/purchase.service';
-import { CommonService } from '../../../core/services/common.service';
-import { PurchaseDto, PurchaseStatusLabels, PurchaseStatusEnum, SupplierDto, FacilityDto, ProductDto } from '../../../core/models/purchase.models';
+import { PurchaseStatusLabels, PurchaseStatusEnum, } from '../../../core/models/purchase.models';
 import { BadgeComponent } from '../../../shared/components/ui/badge/badge.component';
 import { TableDropdownComponent } from '../../../shared/components/common/table-dropdown/table-dropdown.component';
 import { PageBreadcrumbComponent } from '../../../shared/components/common/page-breadcrumb/page-breadcrumb.component';
@@ -13,6 +11,7 @@ import { DateRangePickerComponent } from '../../../shared/components/date-range-
 import { SelectComponent } from '../../../shared/components/form/select/select.component';
 import { ModalComponent } from '../../../shared/components/ui/modal/modal.component';
 import { ButtonComponent } from '../../../shared/components/ui/button/button.component';
+import { ApiPurchaseGetRequestParams, ApiPurchaseIdDeleteRequestParams, FacilityDto, FacilityService, ProductDto, ProductService, PurchaseDto, PurchaseService, SupplierDto, SupplierService } from '../../../api';
 
 interface SortConfig {
   key: string;
@@ -63,7 +62,7 @@ export class PurchaseListComponent implements OnInit {
   facilities: FacilityDto[] = [];
   products: ProductDto[] = [];
 
-  filter: PurchaseFilter = {
+  filter: ApiPurchaseGetRequestParams = {
     pageNumber: 1,
     pageSize: 10,
     sortBy: 'dateCreated',
@@ -138,7 +137,9 @@ export class PurchaseListComponent implements OnInit {
 
   constructor(
     private purchaseService: PurchaseService,
-    private commonService: CommonService
+    private supplierService: SupplierService,
+    private facilityService: FacilityService,
+    private productService: ProductService,
   ) { }
 
   ngOnInit(): void {
@@ -148,7 +149,7 @@ export class PurchaseListComponent implements OnInit {
 
   // Загружаем данные для фильтров
   loadFilterData(): void {
-    this.commonService.getSuppliers().subscribe({
+    this.supplierService.apiSupplierListGet().subscribe({
       next: (response) => {
         this.suppliers = response.data || [];
       },
@@ -157,7 +158,7 @@ export class PurchaseListComponent implements OnInit {
       }
     });
 
-    this.commonService.getFacilities().subscribe({
+    this.facilityService.apiFacilityListGet().subscribe({
       next: (response) => {
         this.facilities = response.data || [];
       },
@@ -166,7 +167,7 @@ export class PurchaseListComponent implements OnInit {
       }
     });
 
-    this.commonService.getProducts().subscribe({
+    this.productService.apiProductListGet().subscribe({
       next: (response) => {
         this.products = response.data || [];
       },
@@ -180,7 +181,7 @@ export class PurchaseListComponent implements OnInit {
     this.loading = true;
 
     // Применяем фильтры и сортировку
-    const filterParams: PurchaseFilter = {
+    const filterParams: ApiPurchaseGetRequestParams = {
       ...this.filter,
       supplierId: this.filterSettings.supplierId,
       facilityId: this.filterSettings.facilityId,
@@ -193,12 +194,12 @@ export class PurchaseListComponent implements OnInit {
       sortDescending: !this.sort.asc
     };
 
-    this.purchaseService.getPurchases(filterParams).subscribe({
+    this.purchaseService.apiPurchaseGet(filterParams).subscribe({
       next: (response) => {
-        let data = response.data;
+        let data = response.data || {};
         this.purchases = data.items || [];
-        this.totalItems = data.totalCount;
-        this.totalPages = data.totalPages;
+        this.totalItems = data.totalCount ?? 0;
+        this.totalPages = data.totalPages ?? 0;
         this.loading = false;
       },
       error: (error) => {
@@ -324,7 +325,10 @@ export class PurchaseListComponent implements OnInit {
 
   confirmDelete(): void {
     if (this.purchaseToDelete) {
-      this.purchaseService.deletePurchase(this.purchaseToDelete.id).subscribe({
+      const request: ApiPurchaseIdDeleteRequestParams = {
+        id: this.purchaseToDelete.id
+      };
+      this.purchaseService.apiPurchaseIdDelete(request).subscribe({
         next: () => {
           this.loadPurchases();
           this.closeDeleteModal();

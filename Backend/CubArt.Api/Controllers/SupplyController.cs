@@ -21,9 +21,9 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedListDto<SupplyDto>), 200)]
+        [ProducesResponseType(typeof(Result<PagedListDto<SupplyDto>>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
-        public async Task<IActionResult> GetSupplies([FromQuery] GetAllSuppliesQuery query, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetSupplies([FromQuery] GetSupplyPagedListQuery query, CancellationToken cancellationToken)
         {
             var result = await _mediator.Send(query, cancellationToken);
 
@@ -34,7 +34,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        [ProducesResponseType(typeof(SupplyDto), 200)]
+        [ProducesResponseType(typeof(Result<SupplyDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> GetSupplyById(Guid id, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(SupplyDto), 200)]
+        [ProducesResponseType(typeof(Result<SupplyDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> CreateOrUpdateSupply([FromBody] CreateOrUpdateSupplyCommand command, CancellationToken cancellationToken)
         {
@@ -61,7 +61,7 @@ namespace CubArt.Api.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        [ProducesResponseType(typeof(SupplyDto), 200)]
+        [ProducesResponseType(typeof(Result<SupplyDto>), 200)]
         [ProducesResponseType(typeof(ProblemDetails), 404)]
         [ProducesResponseType(typeof(ProblemDetails), 400)]
         public async Task<IActionResult> DeleteSupplyById(Guid id, CancellationToken cancellationToken)
