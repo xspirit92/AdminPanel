@@ -5,7 +5,6 @@ using CubArt.Application.Common.Models;
 using CubArt.Application.Payments.DTOs;
 using CubArt.Application.Payments.Queries;
 using CubArt.Domain.Entities;
-using CubArt.Domain.Exceptions;
 using CubArt.Infrastructure.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +18,7 @@ namespace CubArt.Application.Payments.Handlers
 
         private readonly Dictionary<string, Func<IQueryable<Payment>, IQueryable<Payment>>> _sortMap = new()
         {
+            ["purchasename"] = q => q.OrderBy(p => $"{p.Purchase.Product.Name} от {p.Purchase.DateCreated.ToString("dd.MM.yyyy")} - {p.Purchase.Supplier.Name} ({p.Purchase.Amount} руб.)"),
             ["amount"] = q => q.OrderBy(p => p.Amount),
             ["paymentmethod"] = q => q.OrderBy(p => p.PaymentMethod),
             ["paymentstatus"] = q => q.OrderBy(p => p.PaymentStatus),
@@ -42,7 +42,9 @@ namespace CubArt.Application.Payments.Handlers
 
                 var query = _paymentRepository.GetQueryable()
                     .Include(x => x.Purchase)
-                    .ThenInclude(x => x.Product)
+                        .ThenInclude(x => x.Product)
+                    .Include(x => x.Purchase)
+                        .ThenInclude(x => x.Supplier)
                     .AsQueryable();
 
                 // Фильтрация
@@ -67,7 +69,14 @@ namespace CubArt.Application.Payments.Handlers
         {
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
-                query = query.Where(p => p.Purchase.Product.Name.ToLower().Contains(request.SearchTerm.ToLower()));
+                var searchTerm = request.SearchTerm.ToLower();
+                query = query
+                    .Where(p =>
+                        p.Purchase.Product.Name.ToLower().Contains(searchTerm) ||
+                        p.Purchase.Supplier.Name.ToLower().Contains(searchTerm) ||
+                        p.Purchase.Amount.ToString().Contains(searchTerm)
+                    );
+
             }
 
             if (request.PurchaseId.HasValue)

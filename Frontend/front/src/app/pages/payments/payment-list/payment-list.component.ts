@@ -1,22 +1,31 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil, debounceTime, distinctUntilChanged, finalize } from 'rxjs';
+import { PaymentMethodLabels, PaymentStatusLabels } from '../../../core/models/payment.models';
 import { BadgeComponent } from '../../../shared/components/ui/badge/badge.component';
-import { TableDropdownComponent } from '../../../shared/components/common/table-dropdown/table-dropdown.component';
 import { PageBreadcrumbComponent } from '../../../shared/components/common/page-breadcrumb/page-breadcrumb.component';
-import { LabelComponent } from '../../../shared/components/form/label/label.component';
-import { DateRangePickerComponent } from '../../../shared/components/date-range-picker/date-range-picker.component';
-import { SelectComponent } from '../../../shared/components/form/select/select.component';
 import { ModalComponent } from '../../../shared/components/ui/modal/modal.component';
 import { ButtonComponent } from '../../../shared/components/ui/button/button.component';
-import { ApiPaymentGetRequestParams, ApiPaymentIdDeleteRequestParams, PaymentDto, PaymentMethodEnum, PaymentService, PaymentStatusEnum, PurchaseDto, PurchaseService } from '../../../api';
-import { PaymentMethodLabels, PaymentStatusLabels } from '../../../core/models/payment.models';
-
-interface SortConfig {
-  key: string;
-  asc: boolean;
-}
+import {
+  ApiPaymentGetRequestParams,
+  ApiPaymentIdDeleteRequestParams,
+  PaymentDto,
+  PaymentMethodEnum,
+  PaymentService,
+  PaymentStatusEnum,
+  PurchaseDto,
+  PurchaseService
+} from '../../../api';
+import {
+  BaseFiltersComponent,
+  FilterField,
+  FilterValues,
+  FilterOption
+} from '../../../shared/components/base-filters/base-filters.component';
+import { BaseTableComponent, TableColumn, SortConfig } from '../../../shared/components/base-table/base-table.component';
+import { SearchComponent } from '../../../shared/components/search/search.component';
 
 @Component({
   selector: 'app-payment-list',
@@ -25,73 +34,193 @@ interface SortConfig {
     CommonModule,
     RouterModule,
     FormsModule,
-    BadgeComponent,
-    TableDropdownComponent,
     PageBreadcrumbComponent,
-    DateRangePickerComponent,
-    LabelComponent,
-    SelectComponent,
+    BaseFiltersComponent,
+    BaseTableComponent,
+    SearchComponent,
     ModalComponent,
-    ButtonComponent
+    BadgeComponent
   ],
   templateUrl: './payment-list.component.html'
 })
-export class PaymentListComponent implements OnInit {
+export class PaymentListComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private searchSubject = new Subject<string>();
+
+  // Table configuration
+  tableColumns: TableColumn[] = [
+    {
+      key: 'purchaseName',
+      label: 'Закупка',
+      sortable: false
+    },
+    {
+      key: 'amount',
+      label: 'Сумма',
+      sortable: true,
+      type: 'currency'
+    },
+    {
+      key: 'paymentMethod',
+      label: 'Метод оплаты',
+      sortable: true,
+      type: 'badge',
+      badgeColorMap: {
+        [PaymentMethodEnum.NUMBER_1]: 'info',
+        [PaymentMethodEnum.NUMBER_2]: 'success',
+        [PaymentMethodEnum.NUMBER_3]: 'warning'
+      },
+      format: (value: PaymentMethodEnum) => PaymentMethodLabels[value]
+    },
+    {
+      key: 'paymentStatus',
+      label: 'Статус',
+      sortable: true,
+      type: 'badge',
+      badgeColorMap: {
+        [PaymentStatusEnum.NUMBER_1]: 'warning',
+        [PaymentStatusEnum.NUMBER_2]: 'success',
+        [PaymentStatusEnum.NUMBER_3]: 'error'
+      },
+      format: (value: PaymentStatusEnum) => PaymentStatusLabels[value]
+    },
+    {
+      key: 'dateCreated',
+      label: 'Дата создания',
+      sortable: true,
+      type: 'date'
+    },
+    {
+      key: 'actions',
+      label: 'Действия',
+      type: 'actions',
+      width: '100px'
+    }
+  ];
+
+  // Filter configuration
+  filterFields: FilterField[] = [
+    {
+      key: 'dateRange',
+      label: 'Диапазон дат',
+      type: 'date-range',
+      placeholder: 'Выберите период'
+    },
+    {
+      key: 'purchaseId',
+      label: 'Закупка',
+      type: 'select',
+      placeholder: 'Все закупки'
+    },
+    {
+      key: 'paymentMethod',
+      label: 'Метод оплаты',
+      type: 'select',
+      placeholder: 'Все методы'
+    },
+    {
+      key: 'paymentStatus',
+      label: 'Статус',
+      type: 'select',
+      placeholder: 'Все статусы'
+    }
+  ];
+
+  // Data
   payments: PaymentDto[] = [];
-  purchases: PurchaseDto[] = [];
   loading = false;
   totalItems = 0;
   currentPage = 1;
   pageSize = 10;
   totalPages = 0;
 
-  // Модальное окно фильтров
-  isFilterModalOpen = false;
+  // State
+  sortConfig: SortConfig = { key: 'dateCreated', asc: false };
+  filterValues: FilterValues = {};
+  searchTerm = '';
 
-  // Модальное окно подтверждения удаления
+  // Modal states
+  isFilterModalOpen = false;
   isDeleteModalOpen = false;
   paymentToDelete: PaymentDto | null = null;
+  resetFiltersTrigger = false;
 
-  // Сортировка
-  sort: SortConfig = {
-    key: 'dateCreated',
-    asc: false
-  };
+  // Filter data
+  purchases: PurchaseDto[] = [];
 
-  filter: ApiPaymentGetRequestParams = {
-    pageNumber: 1,
-    pageSize: 10,
-    sortBy: 'dateCreated',
-    sortDescending: true
-  };
-
-  // Фильтры из Swagger
-  filterSettings = {
-    purchaseId: undefined as string | undefined,
-    paymentMethod: undefined as PaymentMethodEnum | undefined,
-    paymentStatus: undefined as PaymentStatusEnum | undefined,
-    startDate: undefined as string | undefined,
-    endDate: undefined as string | undefined,
-    searchTerm: ''
-  };
-
+  // Constants
   paymentStatusLabels = PaymentStatusLabels;
   paymentStatusEnum = PaymentStatusEnum;
   paymentMethodLabels = PaymentMethodLabels;
   paymentMethodEnum = PaymentMethodEnum;
 
-  // Опции для селекта метода оплаты
-  get paymentMethodOptions() {
-    return [
-      { value: '', label: 'Все методы' },
-      { value: PaymentMethodEnum.NUMBER_1.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_1] },
-      { value: PaymentMethodEnum.NUMBER_2.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_2] },
-      { value: PaymentMethodEnum.NUMBER_3.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_3] }
-    ];
+  constructor(
+    private paymentService: PaymentService,
+    private purchaseService: PurchaseService,
+    private router: Router
+  ) { }
+
+  ngOnInit(): void {
+    this.loadFilterData();
+    this.loadPayments();
+
+    // Debounce поиска (300ms)
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(term => {
+      this.searchTerm = term;
+      this.currentPage = 1;
+      this.loadPayments();
+    });
   }
 
-  // Опции для селекта статуса
-  get statusOptions() {
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * Загрузка данных для фильтров
+   */
+  loadFilterData(): void {
+    // Загрузка закупок
+    this.purchaseService.apiPurchaseListGet()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response) => {
+          this.purchases = response.data || [];
+          this.updateFilterOptions();
+        },
+        error: (error) => {
+          console.error('Error loading purchases:', error);
+        }
+      });
+  }
+
+  /**
+   * Обновление опций фильтров
+   */
+  updateFilterOptions(): void {
+    this.filterFields = this.filterFields.map(field => {
+      switch (field.key) {
+        case 'purchaseId':
+          return { ...field, options: this.purchaseOptions };
+        case 'paymentMethod':
+          return { ...field, options: this.paymentMethodOptions };
+        case 'paymentStatus':
+          return { ...field, options: this.statusOptions };
+        default:
+          return field;
+      }
+    });
+  }
+
+  /**
+   * Опции для фильтров
+   */
+  get statusOptions(): FilterOption[] {
     return [
       { value: '', label: 'Все статусы' },
       { value: PaymentStatusEnum.NUMBER_1.toString(), label: PaymentStatusLabels[PaymentStatusEnum.NUMBER_1] },
@@ -100,172 +229,171 @@ export class PaymentListComponent implements OnInit {
     ];
   }
 
-  // Опции для селекта закупок
-  get purchaseOptions() {
+  get paymentMethodOptions(): FilterOption[] {
+    return [
+      { value: '', label: 'Все методы' },
+      { value: PaymentMethodEnum.NUMBER_1.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_1] },
+      { value: PaymentMethodEnum.NUMBER_2.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_2] },
+      { value: PaymentMethodEnum.NUMBER_3.toString(), label: PaymentMethodLabels[PaymentMethodEnum.NUMBER_3] }
+    ];
+  }
+
+  get purchaseOptions(): FilterOption[] {
     return [
       { value: '', label: 'Все закупки' },
       ...this.purchases.map(purchase => ({
-        value: purchase.id,
-        label: `${purchase.name || 'Закупка'} - ${purchase.supplierName}`
+        value: purchase.id?.toString() || '',
+        label: `${purchase.name || 'Закупка'} - ${purchase.supplierName || ''}`
       }))
     ];
   }
 
-  // Опции для количества элементов на странице
-  pageSizeOptions = [
-    { value: '10', label: '10' },
-    { value: '25', label: '25' },
-    { value: '50', label: '50' },
-    { value: '100', label: '100' }
-  ];
-
-  constructor(
-    private paymentService: PaymentService,
-    private purchaseService: PurchaseService,
-  ) { }
-
-  ngOnInit(): void {
-    this.loadPurchases();
-    this.loadPayments();
-  }
-
-  loadPurchases(): void {
-    this.purchaseService.apiPurchaseListGet().subscribe({
-      next: (response) => {
-        if (response.isSuccess && response.data) {
-          this.purchases = response.data;
-        }
-      },
-      error: (error) => {
-        console.error('Error loading purchases:', error);
-      }
-    });
-  }
-
+  /**
+   * Загрузка данных оплат
+   */
   loadPayments(): void {
     this.loading = true;
 
-    // Применяем фильтры и сортировку
     const filterParams: ApiPaymentGetRequestParams = {
-      ...this.filter,
-      purchaseId: this.filterSettings.purchaseId,
-      paymentMethod: this.filterSettings.paymentMethod,
-      paymentStatus: this.filterSettings.paymentStatus,
-      startDate: this.filterSettings.startDate,
-      endDate: this.filterSettings.endDate,
-      searchTerm: this.filterSettings.searchTerm,
-      sortBy: this.sort.key,
-      sortDescending: !this.sort.asc
+      pageNumber: this.currentPage,
+      pageSize: this.pageSize,
+      sortBy: this.sortConfig.key,
+      sortDescending: !this.sortConfig.asc,
+      ...this.convertFiltersToApiParams(this.filterValues),
+      searchTerm: this.searchTerm || undefined
     };
 
-    this.paymentService.apiPaymentGet(filterParams).subscribe({
-      next: (response) => {
-        let data = response.data;
-        this.payments = data?.items || [];
-        this.totalItems = data?.totalCount ?? 0;
-        this.totalPages = data?.totalPages ?? 0;
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading payments:', error);
-        this.loading = false;
+    this.paymentService.apiPaymentGet(filterParams)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.loading = false)
+      )
+      .subscribe({
+        next: (response) => {
+          const data = response.data || {};
+          this.payments = data.items || [];
+          this.totalItems = data.totalCount ?? 0;
+          this.totalPages = data.totalPages ?? 0;
+        },
+        error: (error) => {
+          console.error('Error loading payments:', error);
+          this.payments = [];
+          this.totalItems = 0;
+          this.totalPages = 0;
+        }
+      });
+  }
+
+  /**
+   * Преобразование фильтров в параметры API
+   */
+  private convertFiltersToApiParams(filters: FilterValues): Partial<ApiPaymentGetRequestParams> {
+    const params: Partial<ApiPaymentGetRequestParams> = {};
+    const validPaymentMethods = Object.values(PaymentMethodEnum).filter(v => typeof v === 'number') as number[];
+    const validPaymentStatuses = Object.values(PaymentStatusEnum).filter(v => typeof v === 'number') as number[];
+
+    if (filters['purchaseId'] && filters['purchaseId'] !== '') {
+      params.purchaseId = filters['purchaseId'] as string;
+    }
+
+    if (filters['paymentMethod'] && filters['paymentMethod'] !== '') {
+      const methodValue = Number(filters['paymentMethod']);
+      if (!isNaN(methodValue) && validPaymentMethods.includes(methodValue)) {
+        params.paymentMethod = methodValue as PaymentMethodEnum;
       }
-    });
-  }
-
-  // Сортировка по колонке
-  sortBy(key: string): void {
-    if (this.sort.key === key) {
-      this.sort.asc = !this.sort.asc;
-    } else {
-      this.sort.key = key;
-      this.sort.asc = false;
     }
 
-    this.filter.sortBy = this.sort.key;
-    this.filter.sortDescending = !this.sort.asc;
-    this.loadPayments();
-  }
-
-  // Получить класс для иконки сортировки
-  getSortIconClass(columnKey: string): string {
-    if (this.sort.key !== columnKey) {
-      return 'text-gray-300 dark:text-gray-400/50';
+    if (filters['paymentStatus'] && filters['paymentStatus'] !== '') {
+      const statusValue = Number(filters['paymentStatus']);
+      if (!isNaN(statusValue) && validPaymentStatuses.includes(statusValue)) {
+        params.paymentStatus = statusValue as PaymentStatusEnum;
+      }
     }
-    return this.sort.asc ? 'text-gray-500 dark:text-gray-400' : 'text-gray-500 dark:text-gray-400';
-  }
 
-  goToPage(page: number): void {
-    if (page >= 1 && page <= this.totalPages) {
-      this.filter.pageNumber = page;
-      this.currentPage = page;
-      this.loadPayments();
+    if (filters['dateRange'] && typeof filters['dateRange'] === 'object') {
+      const dateRange = filters['dateRange'] as { startDate?: string; endDate?: string };
+      if (dateRange.startDate) {
+        params.startDate = dateRange.startDate;
+      }
+      if (dateRange.endDate) {
+        params.endDate = dateRange.endDate;
+      }
     }
+
+    return params;
   }
 
-  onStatusChange(status: string): void {
-    this.filterSettings.paymentStatus = status ? (Number(status) as PaymentStatusEnum) : undefined;
-  }
-
-  onPaymentMethodChange(method: string): void {
-    this.filterSettings.paymentMethod = method ? (Number(method) as PaymentMethodEnum) : undefined;
-  }
-
-  onPurchaseChange(purchaseId: string): void {
-    this.filterSettings.purchaseId = purchaseId || undefined;
-  }
-
-  onPageSizeChange(size?: number): void {
-    this.filter.pageSize = size ?? 10;
-    this.filter.pageNumber = 1;
+  /**
+   * Обработчики событий таблицы
+   */
+  onSortChange(sort: SortConfig): void {
+    this.sortConfig = sort;
     this.currentPage = 1;
     this.loadPayments();
   }
 
-  onSearch(): void {
-    this.applyFilters();
+  onPageChange(page: number): void {
+    this.currentPage = page;
+    this.loadPayments();
   }
 
-  applyFilters(): void {
-    this.filter.pageNumber = 1;
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
     this.currentPage = 1;
     this.loadPayments();
-    this.closeFilterModal();
   }
 
-  clearFilters(): void {
-    this.filterSettings = {
-      purchaseId: undefined,
-      paymentMethod: undefined,
-      paymentStatus: undefined,
-      startDate: undefined,
-      endDate: undefined,
-      searchTerm: ''
-    };
-    this.applyFilters();
+  /**
+   * Обработчики поиска
+   */
+  onSearch(term: string): void {
+    this.searchSubject.next(term);
   }
 
-  get hasActiveFilters(): boolean {
-    return !!(
-      this.filterSettings.purchaseId ||
-      this.filterSettings.paymentMethod ||
-      this.filterSettings.paymentStatus ||
-      this.filterSettings.startDate ||
-      this.filterSettings.endDate ||
-      this.filterSettings.searchTerm
-    );
+  /**
+   * Обработчики фильтров
+   */
+  onFiltersChange(filters: FilterValues): void {
+    this.filterValues = filters;
   }
 
-  // Методы для управления модальным окном фильтров
-  openFilterModal(): void {
-    this.isFilterModalOpen = true;
+  onFiltersApply(): void {
+    this.currentPage = 1;
+    this.loadPayments();
   }
 
-  closeFilterModal(): void {
-    this.isFilterModalOpen = false;
+  onFiltersReset(): void {
+    this.filterValues = {};
+    this.searchTerm = '';
+    this.currentPage = 1;
+
+    // Триггерим сброс в дочерних компонентах
+    this.resetFiltersTrigger = true;
+    setTimeout(() => {
+      this.resetFiltersTrigger = false;
+    }, 0);
+
+    this.loadPayments();
   }
 
-  // Методы для управления модальным окном удаления
+  onFilterModalToggle(isOpen: boolean): void {
+    this.isFilterModalOpen = isOpen;
+  }
+
+  /**
+   * Обработчики действий
+   */
+  onEditPayment(payment: PaymentDto): void {
+    this.router.navigate(['/payments/edit', payment.id]);
+  }
+
+  onDeletePayment(payment: PaymentDto): void {
+    this.openDeleteModal(payment);
+  }
+
+  /**
+   * Управление модальным окном удаления
+   */
   openDeleteModal(payment: PaymentDto): void {
     this.paymentToDelete = payment;
     this.isDeleteModalOpen = true;
@@ -277,24 +405,43 @@ export class PaymentListComponent implements OnInit {
   }
 
   confirmDelete(): void {
-    if (this.paymentToDelete) {
+    if (this.paymentToDelete?.id) {
       const request: ApiPaymentIdDeleteRequestParams = {
         id: this.paymentToDelete.id
       };
-      this.paymentService.apiPaymentIdDelete(request).subscribe({
-        next: () => {
-          this.loadPayments();
-          this.closeDeleteModal();
-        },
-        error: (error) => {
-          console.error('Error deleting payment:', error);
-          this.closeDeleteModal();
-        }
-      });
+
+      this.paymentService.apiPaymentIdDelete(request)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: () => {
+            this.loadPayments();
+            this.closeDeleteModal();
+          },
+          error: (error) => {
+            console.error('Error deleting payment:', error);
+            this.closeDeleteModal();
+          }
+        });
     }
   }
 
-  getStatusBadgeColor(status: PaymentStatusEnum): 'success' | 'error' | 'warning' | 'info' {
+  /**
+   * Вспомогательные методы
+   */
+  get hasActiveFilters(): boolean {
+    return Object.keys(this.filterValues).some(key => {
+      const value = this.filterValues[key];
+      if (value === null || value === undefined || value === '') {
+        return false;
+      }
+      if (typeof value === 'object' && 'startDate' in value) {
+        return !!(value.startDate || value.endDate);
+      }
+      return true;
+    }) || !!this.searchTerm;
+  }
+
+  getBadgeColor(status: PaymentStatusEnum): 'success' | 'error' | 'warning' | 'info' {
     switch (status) {
       case PaymentStatusEnum.NUMBER_1:
         return 'warning';
@@ -307,35 +454,12 @@ export class PaymentListComponent implements OnInit {
     }
   }
 
-  getMethodBadgeColor(method: PaymentMethodEnum): 'success' | 'error' | 'warning' | 'info' {
-    switch (method) {
-      case PaymentMethodEnum.NUMBER_1:
-        return 'info';
-      case PaymentMethodEnum.NUMBER_2:
-        return 'success';
-      case PaymentMethodEnum.NUMBER_3:
-        return 'warning';
-      default:
-        return 'info';
-    }
-  }
-
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString('ru-RU');
-  }
-
   formatCurrency(amount: number): string {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
       minimumFractionDigits: 2
     }).format(amount);
-  }
-
-  // Обработчик для DateRangePicker
-  onDateRangeChange(event: { startDate: string, endDate: string, selectedDates: Date[], displayValue: string }): void {
-    this.filterSettings.startDate = event.startDate;
-    this.filterSettings.endDate = event.endDate;
   }
 
   // Геттеры для пагинации

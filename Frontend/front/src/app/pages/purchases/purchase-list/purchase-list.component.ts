@@ -367,7 +367,6 @@ export class PurchaseListComponent implements OnInit, OnDestroy {
       }
     }
 
-
     if (filters['dateRange'] && typeof filters['dateRange'] === 'object') {
       const dateRange = filters['dateRange'] as { startDate?: string; endDate?: string };
       if (dateRange.startDate) {

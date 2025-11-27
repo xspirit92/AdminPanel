@@ -26,7 +26,7 @@ export class ModalComponent {
   @Input() showCloseButton = true;
   @Input() isFullscreen = false;
 
-  constructor(private el: ElementRef) {}
+  constructor(private el: ElementRef) { }
 
   ngOnInit() {
     if (this.isOpen) {
@@ -52,8 +52,8 @@ export class ModalComponent {
     event.stopPropagation();
   }
 
-  @HostListener('document:keydown.escape', ['$event'])
-  onEscape(event: KeyboardEvent) {
+  @HostListener('document:keydown.escape')
+  onEscape() {
     if (this.isOpen) {
       this.close.emit();
     }
