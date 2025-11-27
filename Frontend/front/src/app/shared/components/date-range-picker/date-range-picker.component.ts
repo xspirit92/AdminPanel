@@ -25,6 +25,7 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
   @Input() label?: string;
   @Input() placeholder?: string = 'Выберите период';
   @Input() dateFormat: string = 'd.m.Y';
+  @Input() resetTrigger?: boolean; // Новый Input для триггера сброса
   @Output() dateRangeChange = new EventEmitter<{ startDate: string, endDate: string, selectedDates: Date[], displayValue: string }>();
 
   @ViewChild('dateInput', { static: false }) dateInput!: ElementRef<HTMLInputElement>;
@@ -148,20 +149,53 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if ((changes['defaultStartDate'] || changes['defaultEndDate']) && 
-        this.defaultStartDate && this.defaultEndDate) {
-      this.initializeFromDefaults();
+    // Обработка сброса
+    if (changes['resetTrigger'] && changes['resetTrigger'].currentValue === true) {
+      this.resetSelection();
+    }
+
+    // Обработка изменения дат по умолчанию
+    if ((changes['defaultStartDate'] || changes['defaultEndDate']) &&
+      !changes['defaultStartDate']?.firstChange &&
+      !changes['defaultEndDate']?.firstChange) {
+
+      // Если даты сброшены (пустые значения), сбрасываем выбор
+      if (!this.defaultStartDate && !this.defaultEndDate) {
+        this.resetSelection();
+      } else if (this.defaultStartDate && this.defaultEndDate) {
+        this.initializeFromDefaults();
+      }
     }
   }
+
+  /**
+   * Сбрасывает выбор дат
+   */
+  private resetSelection(): void {
+    this.selectedPreset = null;
+    this.currentDisplayValue = '';
+    this.showDropdown = false;
+    this.destroyFlatpickr();
+    this.updateInputDisplay();
+
+    // Эмитим событие сброса
+    this.dateRangeChange.emit({
+      startDate: '',
+      endDate: '',
+      selectedDates: [],
+      displayValue: ''
+    });
+  }
+
 
   private initializeFromDefaults() {
     if (this.defaultStartDate && this.defaultEndDate) {
       const start = this.parseDate(this.defaultStartDate);
       const end = this.parseDate(this.defaultEndDate);
-      
+
       // Ищем подходящий пресет по датам
       const matchedPreset = this.findMatchingPreset(start, end);
-      
+
       if (matchedPreset) {
         this.selectedPreset = matchedPreset.key;
         this.currentDisplayValue = matchedPreset.displayName;
@@ -169,7 +203,7 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
         this.selectedPreset = 'custom';
         this.currentDisplayValue = this.formatDateRange(start, end);
       }
-      
+
       this.updateInputDisplay();
     }
   }
@@ -178,11 +212,11 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
   private findMatchingPreset(startDate: Date, endDate: Date): DateRangePreset | null {
     for (const preset of this.dateRangePresets) {
       if (preset.key === 'custom') continue;
-      
+
       const presetRange = preset.getRange();
       const presetStart = this.toUTCDate(presetRange.startDate);
       const presetEnd = this.toUTCDate(presetRange.endDate);
-      
+
       if (this.areDatesEqual(presetStart, startDate) && this.areDatesEqual(presetEnd, endDate)) {
         return preset;
       }
@@ -193,8 +227,8 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
   // Метод для сравнения дат (только дата, без времени)
   private areDatesEqual(date1: Date, date2: Date): boolean {
     return date1.getUTCFullYear() === date2.getUTCFullYear() &&
-           date1.getUTCMonth() === date2.getUTCMonth() &&
-           date1.getUTCDate() === date2.getUTCDate();
+      date1.getUTCMonth() === date2.getUTCMonth() &&
+      date1.getUTCDate() === date2.getUTCDate();
   }
 
   toggleDropdown() {
@@ -264,7 +298,7 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
           this.currentDisplayValue = '';
           this.selectedPreset = null;
           this.updateInputDisplay();
-          
+
           this.dateRangeChange.emit({
             startDate: '',
             endDate: '',
@@ -272,7 +306,7 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
             displayValue: ''
           });
         }
-        
+
         // Уничтожаем flatpickr при закрытии
         setTimeout(() => {
           this.destroyFlatpickr();
@@ -359,18 +393,9 @@ export class DateRangePickerComponent implements AfterViewInit, OnDestroy, OnCha
     return `${year}-${month}-${day}`;
   }
 
-  // Метод для очистки выбранного диапазона
+  // Метод для очистки выбранного диапазона (публичный метод для вызова извне)
   clearSelection(): void {
-    this.selectedPreset = null;
-    this.currentDisplayValue = '';
-    this.updateInputDisplay();
-
-    this.dateRangeChange.emit({
-      startDate: '',
-      endDate: '',
-      selectedDates: [],
-      displayValue: ''
-    });
+    this.resetSelection();
   }
 
   private parseDate(date: string | Date): Date {

@@ -170,6 +170,7 @@ export class PurchaseListComponent implements OnInit {
     endDate: undefined as string | undefined,
     searchTerm: ''
   };
+  resetFiltersTrigger = false;
 
   purchaseStatusLabels = PurchaseStatusLabels;
   purchaseStatusEnum = PurchaseStatusEnum;
@@ -344,6 +345,8 @@ export class PurchaseListComponent implements OnInit {
   }
 
   clearFilters(): void {
+    this.resetFiltersTrigger = true;
+
     this.filterValues = {};
     this.filterSettings = {
       supplierId: undefined,
@@ -352,8 +355,13 @@ export class PurchaseListComponent implements OnInit {
       purchaseStatus: undefined,
       startDate: undefined,
       endDate: undefined,
-      searchTerm: this.filterSettings.searchTerm // сохраняем поисковый термин
+      searchTerm: this.filterSettings.searchTerm
     };
+
+    setTimeout(() => {
+      this.resetFiltersTrigger = false;
+    }, 0);
+
     this.applyFilters();
   }
 

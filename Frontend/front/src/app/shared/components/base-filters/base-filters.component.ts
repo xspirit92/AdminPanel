@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ViewChildren, QueryList, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../ui/modal/modal.component';
@@ -39,12 +39,23 @@ export class BaseFiltersComponent {
   @Input() filterValues: { [key: string]: any } = {};
   @Input() hasActiveFilters = false;
   @Input() isFilterModalOpen = false;
+  @Input() resetTrigger = false; // Добавляем Input для триггера сброса
   
   @Output() filterChange = new EventEmitter<{ [key: string]: any }>();
   @Output() applyFilters = new EventEmitter<void>();
   @Output() clearFilters = new EventEmitter<void>();
   @Output() openFilterModal = new EventEmitter<void>();
   @Output() closeFilterModal = new EventEmitter<void>();
+
+  // Получаем ссылки на все компоненты DateRangePicker
+  @ViewChildren(DateRangePickerComponent) dateRangePickers!: QueryList<DateRangePickerComponent>;
+
+  ngOnChanges(changes: SimpleChanges) {
+    // Если сработал триггер сброса, сбрасываем все DateRangePicker
+    if (changes['resetTrigger'] && changes['resetTrigger'].currentValue === true) {
+      this.resetDateRangePickers();
+    }
+  }
 
   onFilterChange(key: string, value: any): void {
     this.filterValues[key] = value;
@@ -56,7 +67,15 @@ export class BaseFiltersComponent {
   }
 
   onClear(): void {
+    // Сбрасываем все DateRangePicker компоненты
+    this.resetDateRangePickers();
     this.clearFilters.emit();
+  }
+
+  private resetDateRangePickers(): void {
+    this.dateRangePickers.forEach(picker => {
+      picker.clearSelection();
+    });
   }
 
   onOpenModal(): void {

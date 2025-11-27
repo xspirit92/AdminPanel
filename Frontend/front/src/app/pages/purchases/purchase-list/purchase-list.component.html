@@ -35,6 +35,7 @@
           [filterValues]="filterValues"
           [hasActiveFilters]="hasActiveFilters"
           [isFilterModalOpen]="isFilterModalOpen"
+          [resetTrigger]="resetFiltersTrigger"
           (filterChange)="onFilterChange($event)"
           (applyFilters)="applyFilters()"
           (clearFilters)="clearFilters()"
@@ -82,6 +83,7 @@
                     <div>
                         <app-date-range-picker id="date-range" label="Диапазон дат" placeholder="Выберите период"
                             [defaultStartDate]="filterSettings.startDate" [defaultEndDate]="filterSettings.endDate"
+                            [resetTrigger]="resetFiltersTrigger"
                             (dateRangeChange)="onDateRangeChange($event)" />
                     </div>
                     <!-- Supplier Filter -->
