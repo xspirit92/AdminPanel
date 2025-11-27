@@ -1,4 +1,11 @@
-import { Component, Input, Output, EventEmitter, ViewChildren, QueryList, SimpleChanges } from '@angular/core';
+import { 
+  Component, 
+  Input, 
+  Output, 
+  EventEmitter, 
+  SimpleChanges,
+  ChangeDetectionStrategy 
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../ui/modal/modal.component';
@@ -12,12 +19,25 @@ export interface FilterOption {
   label: string;
 }
 
+export type FilterType = 'select' | 'date-range' | 'text';
+
 export interface FilterField {
   key: string;
   label: string;
-  type: 'select' | 'date-range' | 'text';
+  type: FilterType;
   options?: FilterOption[];
   placeholder?: string;
+}
+
+export interface DateRangeValue {
+  startDate?: string;
+  endDate?: string;
+}
+
+export type FilterValue = string | number | DateRangeValue | null | undefined;
+
+export interface FilterValues {
+  [key: string]: FilterValue;
 }
 
 @Component({
@@ -27,70 +47,116 @@ export interface FilterField {
     CommonModule, 
     FormsModule,
     ModalComponent,
-    ButtonComponent,
     LabelComponent,
     SelectComponent,
     DateRangePickerComponent
   ],
-  templateUrl: './base-filters.component.html'
+  templateUrl: './base-filters.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BaseFiltersComponent {
+  // Inputs
   @Input() filters: FilterField[] = [];
-  @Input() filterValues: { [key: string]: any } = {};
+  @Input() filterValues: FilterValues = {};
   @Input() hasActiveFilters = false;
   @Input() isFilterModalOpen = false;
-  @Input() resetTrigger = false; // Добавляем Input для триггера сброса
-  
-  @Output() filterChange = new EventEmitter<{ [key: string]: any }>();
-  @Output() applyFilters = new EventEmitter<void>();
-  @Output() clearFilters = new EventEmitter<void>();
-  @Output() openFilterModal = new EventEmitter<void>();
-  @Output() closeFilterModal = new EventEmitter<void>();
+  @Input() resetTrigger = false;
 
-  // Получаем ссылки на все компоненты DateRangePicker
-  @ViewChildren(DateRangePickerComponent) dateRangePickers!: QueryList<DateRangePickerComponent>;
+  // Outputs
+  @Output() filtersChange = new EventEmitter<FilterValues>();
+  @Output() filtersApply = new EventEmitter<void>();
+  @Output() filtersReset = new EventEmitter<void>();
+  @Output() modalToggle = new EventEmitter<boolean>();
 
-  ngOnChanges(changes: SimpleChanges) {
-    // Если сработал триггер сброса, сбрасываем все DateRangePicker
-    if (changes['resetTrigger'] && changes['resetTrigger'].currentValue === true) {
-      this.resetDateRangePickers();
+  // Делаем публичным для использования в шаблоне
+  tempFilterValues: FilterValues = {};
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Инициализируем временные значения при открытии модалки
+    if (changes['isFilterModalOpen']?.currentValue === true) {
+      this.tempFilterValues = { ...this.filterValues };
+    }
+
+    // Обрабатываем сброс фильтров
+    if (changes['resetTrigger']?.currentValue === true) {
+      this.tempFilterValues = {};
     }
   }
 
-  onFilterChange(key: string, value: any): void {
-    this.filterValues[key] = value;
-    this.filterChange.emit(this.filterValues);
-  }
-
-  onApply(): void {
-    this.applyFilters.emit();
-  }
-
-  onClear(): void {
-    // Сбрасываем все DateRangePicker компоненты
-    this.resetDateRangePickers();
-    this.clearFilters.emit();
-  }
-
-  private resetDateRangePickers(): void {
-    this.dateRangePickers.forEach(picker => {
-      picker.clearSelection();
-    });
-  }
-
+  /**
+   * Обработчики событий модального окна
+   */
   onOpenModal(): void {
-    this.openFilterModal.emit();
+    this.tempFilterValues = { ...this.filterValues };
+    this.modalToggle.emit(true);
   }
 
   onCloseModal(): void {
-    this.closeFilterModal.emit();
+    this.modalToggle.emit(false);
   }
 
-  onDateRangeChange(key: string, event: { startDate: string, endDate: string, selectedDates: Date[], displayValue: string }): void {
-    this.filterValues[key] = {
+  /**
+   * Обработчики изменений фильтров в модалке
+   */
+  onFilterChange(key: string, value: FilterValue): void {
+    this.tempFilterValues[key] = value;
+  }
+
+  onDateRangeChange(key: string, event: { startDate: string, endDate: string }): void {
+    this.tempFilterValues[key] = {
       startDate: event.startDate,
       endDate: event.endDate
     };
-    this.filterChange.emit(this.filterValues);
+  }
+
+  /**
+   * Действия с фильтрами
+   */
+  onApply(): void {
+    // Эмитим новые значения фильтров
+    this.filtersChange.emit({ ...this.tempFilterValues });
+    // Эмитим событие применения
+    this.filtersApply.emit();
+    // Закрываем модалку
+    this.modalToggle.emit(false);
+  }
+
+  onReset(): void {
+    // Сбрасываем временные значения
+    this.tempFilterValues = {};
+    // Эмитим событие сброса
+    this.filtersReset.emit();
+    // Закрываем модалку
+    this.modalToggle.emit(false);
+  }
+
+  /**
+   * Вспомогательные методы для шаблона
+   */
+  hasFilterValue(key: string): boolean {
+    const value = this.tempFilterValues[key];
+    
+    if (value === null || value === undefined || value === '') {
+      return false;
+    }
+
+    // Проверяем DateRangeValue
+    if (typeof value === 'object' && 'startDate' in value) {
+      return !!(value.startDate || value.endDate);
+    }
+
+    return true;
+  }
+
+  /**
+   * Методы для типизации (удобно для шаблона)
+   */
+  isDateRangeValue(value: FilterValue): value is DateRangeValue {
+    return typeof value === 'object' && value !== null && ('startDate' in value || 'endDate' in value);
+  }
+
+  getDateRangeValue(key: string): DateRangeValue {
+    const value = this.tempFilterValues[key];
+    return this.isDateRangeValue(value) ? value : {};
   }
 }

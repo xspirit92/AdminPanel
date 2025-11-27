@@ -37,11 +37,10 @@
           [hasActiveFilters]="hasActiveFilters"
           [isFilterModalOpen]="isFilterModalOpen"
           [resetTrigger]="resetFiltersTrigger"
-          (filterChange)="onFilterChange($event)"
-          (applyFilters)="applyFilters()"
-          (clearFilters)="clearFilters()"
-          (openFilterModal)="onOpenFilterModal()"
-          (closeFilterModal)="onCloseFilterModal()"
+          (filtersChange)="onFiltersChange($event)"
+          (filtersApply)="onFiltersApply()"
+          (filtersReset)="onFiltersReset()"
+          (modalToggle)="onFilterModalToggle($event)"
         />
       </div>
     </div>
@@ -64,69 +63,6 @@
     />
   </div>
 </div>
-
-<!-- Filter Modal -->
-<app-modal [isOpen]="isFilterModalOpen" (close)="closeFilterModal()" className="max-w-[520px] m-4">
-    <div
-        class="no-scrollbar relative w-full max-w-[520px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
-        <div class="px-2 pr-14">
-            <h4 class="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-                Фильтры закупок
-            </h4>
-            <p class="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-                Настройте параметры фильтрации для поиска нужных закупок.
-            </p>
-        </div>
-        <form class="flex flex-col">
-            <div class="custom-scrollbar max-h-[60vh] overflow-y-auto px-2 pb-3">
-                <div class="space-y-6">
-                    <!-- Date Range Picker -->
-                    <div>
-                        <app-date-range-picker id="date-range" label="Диапазон дат" placeholder="Выберите период"
-                            [defaultStartDate]="filterSettings.startDate" [defaultEndDate]="filterSettings.endDate"
-                            [resetTrigger]="resetFiltersTrigger"
-                            (dateRangeChange)="onDateRangeChange($event)" />
-                    </div>
-                    <!-- Supplier Filter -->
-                    <div>
-                        <app-label>Поставщик</app-label>
-                        <app-select [options]="supplierOptions" [(ngModel)]="filterSettings.supplierId"
-                            (ngModelChange)="onSupplierChange($event)" name="supplier" placeholder="Все поставщики">
-                        </app-select>
-                    </div>
-
-                    <!-- Facility Filter -->
-                    <div>
-                        <app-label>Объект</app-label>
-                        <app-select [options]="facilityOptions" [(ngModel)]="filterSettings.facilityId"
-                            (ngModelChange)="onFacilityChange($event)" name="facility" placeholder="Все объекты">
-                        </app-select>
-                    </div>
-
-                    <!-- Product Filter -->
-                    <div>
-                        <app-label>Продукт</app-label>
-                        <app-select [options]="productOptions" [(ngModel)]="filterSettings.productId"
-                            (ngModelChange)="onProductChange($event)" name="product" placeholder="Все продукты">
-                        </app-select>
-                    </div>
-
-                    <!-- Status Filter -->
-                    <div>
-                        <app-label>Статус</app-label>
-                        <app-select [options]="statusOptions" [(ngModel)]="filterSettings.purchaseStatus"
-                            (ngModelChange)="onStatusChange($event)" name="status" placeholder="Все статусы">
-                        </app-select>
-                    </div>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-                <app-button size="sm" variant="outline" (btnClick)="clearFilters()">Сбросить</app-button>
-                <app-button size="sm" (btnClick)="applyFilters()">Применить</app-button>
-            </div>
-        </form>
-    </div>
-</app-modal>
 
 <!-- Delete Confirmation Modal -->
 <app-modal [isOpen]="isDeleteModalOpen" (close)="closeDeleteModal()" className="max-w-[500px] m-4">
@@ -167,7 +103,7 @@
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Сумма:</span>
                         <span class="text-sm font-medium text-gray-800 dark:text-white/90">{{
-                            formatCurrency(purchaseToDelete.amount) }}</span>
+                            formatCurrency(purchaseToDelete.amount || 0) }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Статус:</span>
@@ -180,10 +116,20 @@
         </div>
 
         <div class="flex items-center justify-center gap-3 px-2 mt-6">
-            <app-button size="sm" variant="outline" (btnClick)="closeDeleteModal()">Отмена</app-button>
-            <app-button size="sm" variant="outline" (btnClick)="confirmDelete()">
+            <button 
+                type="button"
+                class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-theme-xs transition hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
+                (click)="closeDeleteModal()"
+            >
+                Отмена
+            </button>
+            <button 
+                type="button"
+                class="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500 bg-red-500 px-4 py-2.5 text-sm font-medium text-white shadow-theme-xs transition hover:border-red-600 hover:bg-red-600"
+                (click)="confirmDelete()"
+            >
                 Удалить
-            </app-button>
+            </button>
         </div>
     </div>
 </app-modal>
