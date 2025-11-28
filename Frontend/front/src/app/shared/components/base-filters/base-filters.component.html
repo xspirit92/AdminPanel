@@ -51,6 +51,7 @@
                 <app-label [for]="filter.key">{{ filter.label }}</app-label>
                 <app-select 
                   [id]="filter.key"
+                  [searchable]="true"
                   [options]="filter.options || []" 
                   [(ngModel)]="tempFilterValues[filter.key]"
                   (ngModelChange)="onFilterChange(filter.key, $event)" 
